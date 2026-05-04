@@ -2098,59 +2098,36 @@ function normalizePdfText(value) {
 }
 
 function loadSharedLogoSvg() {
-  if (logoSvgCache) {
-    return Promise.resolve(logoSvgCache);
-  }
-
-  if (logoSvgLoading) {
-    return logoSvgLoading;
-  }
-
-  logoSvgLoading = fetch('assets/logo.svg')
-    .then(function (response) {
-      if (!response.ok) {
-        throw new Error('Logo konnte nicht geladen werden: HTTP ' + response.status);
-      }
-
-      return response.text();
-    })
-    .then(function (svgText) {
-      logoSvgCache = normalizeLogoSvgForPrint(svgText);
-      return logoSvgCache;
-    })
-    .catch(function (err) {
-      console.warn(getErrorText(err));
-      logoSvgLoading = null;
-      return '';
-    });
-
-  return logoSvgLoading;
+  logoSvgCache = getInlineLogoSvg();
+  return Promise.resolve(logoSvgCache);
 }
 
 function normalizeLogoSvgForPrint(svgText) {
-  var text = String(svgText || '').trim();
-
-  text = text.replace(/<\?xml[^>]*>\s*/i, '');
-  text = text.replace(/<!DOCTYPE[^>]*>\s*/i, '');
-
-  text = text.replace(/<svg\b([^>]*)>/i, function (match, attrs) {
-    if (/style\s*=/.test(match)) {
-      return match;
-    }
-
-    return '<svg' + attrs + ' style="width:190px;height:auto">';
-  });
-
-  return text;
+  return String(svgText || '');
 }
 
 function getInlineLogoSvg() {
-  if (logoSvgCache) {
-    return logoSvgCache;
-  }
-
-  return '<div style="font-family:Arial,sans-serif;font-size:28px;font-weight:900;color:#111">GEBA<span style="color:#c4bd18">TECH</span></div>';
+  return `
+    <svg viewBox="0 0 520 180" role="img" aria-label="GEBATECH Gebäude- und Anlagentechnik Logo" xmlns="http://www.w3.org/2000/svg" style="width:190px;height:auto">
+      <defs>
+        <style>
+          .gbt-black{fill:#111111}
+          .gbt-brand{fill:#c4bd18}
+          .gbt-text{fill:#111111;font-family:Arial,Helvetica,sans-serif;font-weight:900}
+          .gbt-sub{fill:#111111;font-family:Arial,Helvetica,sans-serif;font-weight:700}
+        </style>
+      </defs>
+      <g transform="translate(20 12) scale(0.85) translate(-82.111 -8.672)">
+        <path fill-rule="evenodd" clip-rule="evenodd" fill="#1D1D1B" d="M143.14,48.858v63.52l-0.312,0.002 c-17.541,0-31.761-14.22-31.761-31.761c0-17.542,14.22-31.762,31.761-31.762L143.14,48.858z M143.14,8.672v34.757l-0.312,0.004 c-5.72,0-10.428-4.337-11.015-9.901c-5.202,1.213-10.082,3.265-14.489,6.007c3.518,4.35,3.255,10.742-0.79,14.786 c-4.043,4.044-10.437,4.308-14.786,0.79c-2.745,4.413-4.8,9.301-6.011,14.513c5.545,0.604,9.861,5.303,9.861,11.01 c0,5.703-4.312,10.4-9.854,11.01c1.215,5.205,3.27,10.087,6.015,14.495c4.349-3.471,10.704-3.192,14.73,0.835 c4.025,4.024,4.305,10.376,0.839,14.725c4.406,2.741,9.285,4.792,14.486,6.004c0.635-5.514,5.318-9.794,11.003-9.795l0.322,0.005 v21.971l-61.028-0.003V44.081L143.14,8.672z"/>
+        <path fill="#D3BF00" d="M153.82,127.71c-0.621-5.411-5.141-9.637-10.681-9.795v-5.537c17.397-0.167,31.449-14.321,31.449-31.759 c0-17.438-14.052-31.594-31.449-31.761v-5.43c5.578-0.154,10.127-4.435,10.702-9.897c5.223,1.217,10.119,3.28,14.54,6.037 c-3.515,4.35-3.25,10.74,0.793,14.783c4.037,4.037,10.413,4.307,14.763,0.81c2.74,4.415,4.788,9.305,5.994,14.517 c-5.538,0.612-9.845,5.308-9.845,11.009c0,5.69,4.29,10.379,9.813,11.007c-1.218,5.196-3.274,10.07-6.018,14.472 c-4.35-3.454-10.691-3.17-14.713,0.851c-4.016,4.016-4.303,10.35-0.861,14.697C163.902,124.451,159.022,126.5,153.82,127.71z"/>
+      </g>
+      <text x="160" y="88" class="gbt-text" font-size="54">GEBA<tspan class="gbt-brand">TECH</tspan></text>
+      <text x="164" y="122" class="gbt-sub" font-size="23">GEBÄUDE | ANLAGENTECHNIK</text>
+    </svg>
+  `;
 }
+
+
 
 function buildZip(files) {
   var localParts = [];
