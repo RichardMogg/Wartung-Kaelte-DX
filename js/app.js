@@ -1,4 +1,4 @@
-var lineBreak = String.fromCharCode(10);
+  var lineBreak = String.fromCharCode(10);
 var csvLineBreak = String.fromCharCode(13, 10);
 
 var indoorCounter = 0;
@@ -1822,9 +1822,11 @@ function buildPrintHtml(data) {
     'table{width:100%;border-collapse:collapse;margin-bottom:10px}',
     'th,td{border:1px solid #111;padding:4px;vertical-align:top}',
     'th{background:#eee}',
-    '.ok{background:#92d050}',
-    '.warn{background:#ffff00}',
-    '.bad{background:#ff0000}',
+    '.ok{background:#92d050 !important;background-color:#92d050 !important}',
+    '.warn{background:#ffff00 !important;background-color:#ffff00 !important}',
+    '.bad{background:#ff0000 !important;background-color:#ff0000 !important}',
+    '.ok,.warn,.bad{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}',
+    '@media print{.ok,.warn,.bad{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}}',
     '.foot{font-size:9px;text-align:center;margin-top:16px}',
     '.sig{height:100px;border:1px solid #000;background:#fff}',
     '.sig img{max-height:95px;max-width:100%}'
