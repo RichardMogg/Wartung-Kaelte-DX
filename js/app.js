@@ -25,6 +25,7 @@ window.addEventListener('load', function () {
   bindEvents();
   addCollapseButtons();
   initSignatureCanvas();
+  loadSharedLogoSvg();
   loadState();
   restoreDraft();
 
