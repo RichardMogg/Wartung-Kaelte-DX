@@ -1,13 +1,11 @@
 var STORAGE_KEY = 'gebatech_wartungsprotokoll_kaelte_v34';
 
 var CHECKLISTS = {
-  allgemein: [
+  aussen: [
     { label: 'Zustand', cleaned: true, repaired: true },
     { label: 'Kühlleistung', cleaned: false, repaired: false },
     { label: 'Betriebsgeräusch', cleaned: false, repaired: true },
-    { label: 'Kältemittelfüllung', cleaned: false, repaired: false }
-  ],
-  aussen: [
+    { label: 'Kältemittelfüllung', cleaned: false, repaired: false },
     { label: 'Gehäuse', cleaned: true, repaired: true },
     { label: 'Kondensator', cleaned: true, repaired: true },
     { label: 'Ventilatoreinheit', cleaned: true, repaired: true },
@@ -16,6 +14,8 @@ var CHECKLISTS = {
     { label: 'Befestigung', cleaned: false, repaired: true }
   ],
   innen: [
+    { label: 'Kühlleistung', cleaned: false, repaired: false },
+    { label: 'Betriebsgeräusch', cleaned: false, repaired: true },
     { label: 'Gehäuse', cleaned: true, repaired: true },
     { label: 'Verdampfer', cleaned: true, repaired: true },
     { label: 'Ventilatoreinheit', cleaned: true, repaired: true },
