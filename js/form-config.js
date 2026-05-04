@@ -56,7 +56,7 @@ var PRINT_GEAR_BACKGROUND = {
   enabled: true,
 
   // Deckkraft: 0 = unsichtbar, 1 = volle Deckkraft
-  opacity: 0.12,
+  opacity: 1,
 
   // SVG-Datei
   imagePath: 'assets/frontpage-gear.svg',
