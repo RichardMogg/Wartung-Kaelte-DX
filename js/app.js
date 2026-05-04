@@ -1578,6 +1578,8 @@ async function exportZip() {
     return;
   }
 
+  await loadSharedLogoSvg();
+
   setStatus('ZIP wird erstellt ...', 'ok');
 
   try {
@@ -2095,12 +2097,59 @@ function normalizePdfText(value) {
     .replace(/[^\x20-\x7E]/g, ' ');
 }
 
+function loadSharedLogoSvg() {
+  if (logoSvgCache) {
+    return Promise.resolve(logoSvgCache);
+  }
+
+  if (logoSvgLoading) {
+    return logoSvgLoading;
+  }
+
+  logoSvgLoading = fetch('assets/logo.svg')
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error('Logo konnte nicht geladen werden: HTTP ' + response.status);
+      }
+
+      return response.text();
+    })
+    .then(function (svgText) {
+      logoSvgCache = normalizeLogoSvgForPrint(svgText);
+      return logoSvgCache;
+    })
+    .catch(function (err) {
+      console.warn(getErrorText(err));
+      logoSvgLoading = null;
+      return '';
+    });
+
+  return logoSvgLoading;
+}
+
+function normalizeLogoSvgForPrint(svgText) {
+  var text = String(svgText || '').trim();
+
+  text = text.replace(/<\?xml[^>]*>\s*/i, '');
+  text = text.replace(/<!DOCTYPE[^>]*>\s*/i, '');
+
+  text = text.replace(/<svg\b([^>]*)>/i, function (match, attrs) {
+    if (/style\s*=/.test(match)) {
+      return match;
+    }
+
+    return '<svg' + attrs + ' style="width:190px;height:auto">';
+  });
+
+  return text;
+}
+
 function getInlineLogoSvg() {
-  return '<svg viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg" style="width:180px;height:auto">' +
-    '<text x="90" y="88" style="fill:#111;font-family:Arial;font-weight:900;font-size:54px">GEBA</text>' +
-    '<text x="240" y="88" style="fill:#c4bd18;font-family:Arial;font-weight:900;font-size:54px">TECH</text>' +
-    '<text x="92" y="122" style="fill:#111;font-family:Arial;font-weight:700;font-size:23px">GEBÄUDE | ANLAGENTECHNIK</text>' +
-  '</svg>';
+  if (logoSvgCache) {
+    return logoSvgCache;
+  }
+
+  return '<div style="font-family:Arial,sans-serif;font-size:28px;font-weight:900;color:#111">GEBA<span style="color:#c4bd18">TECH</span></div>';
 }
 
 function buildZip(files) {
