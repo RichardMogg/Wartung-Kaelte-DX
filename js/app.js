@@ -203,7 +203,6 @@ function openSection(id, closeOthers) {
 }
 
 function renderStaticChecklists() {
-  renderChecklist(document.getElementById('checkAllgemein'), 'allgemein', CHECKLISTS.allgemein);
   renderChecklist(document.getElementById('checkAussen'), 'aussen', CHECKLISTS.aussen);
   renderChecklist(document.getElementById('checkRegelung'), 'regelung', CHECKLISTS.regelung);
   renderChecklist(document.getElementById('checkLeitung'), 'leitung', CHECKLISTS.leitung);
@@ -279,6 +278,10 @@ function addIndoorUnit(scrollToNew, values) {
   card.innerHTML =
     '<summary><span class="indoor-summary">Inneneinheit ' + indoorCounter + '</span></summary>' +
     '<div class="indoor-body">' +
+      '<div class="grid">' +
+        '<div class="field"><label>Type <span class="required-hint">*</span></label><input data-indoor-type required autocomplete="off"></div>' +
+        '<div class="field"><label>Seriennummer <span class="required-hint">*</span></label><input data-indoor-serial required autocomplete="off"></div>' +
+      '</div>' +
       '<div class="field"><label>Bezeichnung / Standort der Inneneinheit</label><input data-indoor-name autocomplete="off"></div>' +
       '<div class="field"><label>Messwerte Inneneinheit</label>' + buildIndoorMeasurementHtml() + '</div>' +
       '<div data-indoor-checks></div>' +
@@ -296,6 +299,8 @@ function addIndoorUnit(scrollToNew, values) {
   });
 
   card.querySelector('[data-indoor-name]').addEventListener('input', updateIndoorSummaries);
+  card.querySelector('[data-indoor-type]').addEventListener('input', throttledDraftSave);
+  card.querySelector('[data-indoor-serial]').addEventListener('input', throttledDraftSave);
 
   card.addEventListener('toggle', function () {
     if (card.open) {
@@ -684,6 +689,29 @@ function collectFields(container) {
   return result;
 }
 
+function collectAussenMeta() {
+  return {
+    type: document.getElementById('aussenTypeInput').value || '',
+    seriennummer: document.getElementById('aussenSeriennummerInput').value || ''
+  };
+}
+
+function setAussenMeta(data) {
+  data = data || {};
+
+  var typeInput = document.getElementById('aussenTypeInput');
+  var serialInput = document.getElementById('aussenSeriennummerInput');
+
+  if (typeInput) {
+    typeInput.value = data.type || '';
+  }
+
+  if (serialInput) {
+    serialInput.value = data.seriennummer || '';
+  }
+}
+
+
 function setFields(container, data) {
   container.querySelectorAll('[data-field]').forEach(function (el) {
     var key = el.getAttribute('data-field');
@@ -756,6 +784,8 @@ function collectIndoorUnits() {
   document.querySelectorAll('.indoor-card').forEach(function (card, index) {
     units.push({
       nr: index + 1,
+      type: card.querySelector('[data-indoor-type]') ? card.querySelector('[data-indoor-type]').value || '' : '',
+      seriennummer: card.querySelector('[data-indoor-serial]') ? card.querySelector('[data-indoor-serial]').value || '' : '',
       bezeichnung: card.querySelector('[data-indoor-name]').value || '',
       messwerte: collectIndoorMeasurements(card),
       pruefpunkte: collectChecklist(card, 'Inneneinheit ' + (index + 1))
@@ -796,6 +826,19 @@ function setIndoorMeasurements(card, values) {
 }
 
 function setIndoorValues(card, values) {
+  values = values || {};
+
+  var typeInput = card.querySelector('[data-indoor-type]');
+  var serialInput = card.querySelector('[data-indoor-serial]');
+
+  if (typeInput) {
+    typeInput.value = values.type || '';
+  }
+
+  if (serialInput) {
+    serialInput.value = values.seriennummer || '';
+  }
+
   card.querySelector('[data-indoor-name]').value = values.bezeichnung || '';
   setIndoorMeasurements(card, values.messwerte || []);
   setChecklist(card, values.pruefpunkte || []);
@@ -841,7 +884,7 @@ function collectProtocol() {
     },
     kopfdaten: collectFields(document.getElementById('kopfdatenFields')),
     pruefung: {
-      allgemein: collectChecklist(document.getElementById('checkAllgemein'), 'Allgemein'),
+      ausseneinheitMeta: collectAussenMeta(),
       ausseneinheit: collectChecklist(document.getElementById('checkAussen'), 'Außeneinheit'),
       inneneinheiten: collectIndoorUnits(),
       bedienungRegelung: collectChecklist(document.getElementById('checkRegelung'), 'Bedienung / Regelung'),
@@ -975,20 +1018,36 @@ function getProtocolValidationIssues(data, label) {
     issues.push(label + ': Unterschrift fehlt.');
   }
 
-  addChecklistValidationIssues(issues, label, 'Allgemein', pruefung.allgemein || []);
+  var aussenMeta = pruefung.ausseneinheitMeta || {};
+
+if (!safeText(aussenMeta.type)) {
+  issues.push(label + ': Außeneinheit – Type fehlt.');
+}
+
+if (!safeText(aussenMeta.seriennummer)) {
+  issues.push(label + ': Außeneinheit – Seriennummer fehlt.');
+}
   addChecklistValidationIssues(issues, label, 'Außeneinheit', pruefung.ausseneinheit || []);
 
-  var inneneinheiten = pruefung.inneneinheiten || [];
+var inneneinheiten = pruefung.inneneinheiten || [];
 
-  for (var i = 0; i < inneneinheiten.length; i++) {
-    var unit = inneneinheiten[i] || {};
-    var unitName =
-      'Inneneinheit ' +
-      (i + 1) +
-      (unit.bezeichnung ? ' – ' + unit.bezeichnung : '');
+for (var i = 0; i < inneneinheiten.length; i++) {
+  var unit = inneneinheiten[i] || {};
+  var unitName =
+    'Inneneinheit ' +
+    (i + 1) +
+    (unit.bezeichnung ? ' – ' + unit.bezeichnung : '');
 
-    addChecklistValidationIssues(issues, label, unitName, unit.pruefpunkte || []);
+  if (!safeText(unit.type)) {
+    issues.push(label + ': ' + unitName + ' – Type fehlt.');
   }
+
+  if (!safeText(unit.seriennummer)) {
+    issues.push(label + ': ' + unitName + ' – Seriennummer fehlt.');
+  }
+
+  addChecklistValidationIssues(issues, label, unitName, unit.pruefpunkte || []);
+}
 
   addChecklistValidationIssues(issues, label, 'Bedienung / Regelung', pruefung.bedienungRegelung || []);
   addChecklistValidationIssues(issues, label, 'Leitungssystem', pruefung.leitungssystem || []);
@@ -1095,7 +1154,7 @@ function fillFormFromProtocol(data) {
   document.getElementById('objektInput').value = data.stammdaten && data.stammdaten.objekt || '';
 
   setFields(document.getElementById('kopfdatenFields'), data.kopfdaten || {});
-  setChecklist(document.getElementById('checkAllgemein'), data.pruefung && data.pruefung.allgemein || []);
+  setAussenMeta(data.pruefung && data.pruefung.ausseneinheitMeta || {});
   setChecklist(document.getElementById('checkAussen'), data.pruefung && data.pruefung.ausseneinheit || []);
   setChecklist(document.getElementById('checkRegelung'), data.pruefung && data.pruefung.bedienungRegelung || []);
   setChecklist(document.getElementById('checkLeitung'), data.pruefung && data.pruefung.leitungssystem || []);
@@ -1749,12 +1808,17 @@ function buildCsvForProtocols(records) {
       rows.push([record.recordId, 'Kopfdaten', '', key, data.kopfdaten[key], '', '', '', '']);
     });
 
-    addCsvChecklist(rows, record.recordId, data.pruefung.allgemein, 'Allgemein', '');
+    var aussenMeta = data.pruefung.ausseneinheitMeta || {};
+
+rows.push([record.recordId, 'Außeneinheit', '', 'Type', aussenMeta.type || '', '', '', '', '']);
+rows.push([record.recordId, 'Außeneinheit', '', 'Seriennummer', aussenMeta.seriennummer || '', '', '', '', '']);
     addCsvChecklist(rows, record.recordId, data.pruefung.ausseneinheit, 'Außeneinheit', '');
 
     for (var i = 0; i < data.pruefung.inneneinheiten.length; i++) {
       var unit = data.pruefung.inneneinheiten[i];
       var unitName = unit.bezeichnung || String(i + 1);
+      rows.push([record.recordId, 'Inneneinheit', unitName, 'Type', unit.type || '', '', '', '', '']);
+rows.push([record.recordId, 'Inneneinheit', unitName, 'Seriennummer', unit.seriennummer || '', '', '', '', '']);
 
       addCsvChecklist(rows, record.recordId, unit.pruefpunkte, 'Inneneinheit', unitName);
 
@@ -2098,14 +2162,29 @@ html +=
     '<br><b>Nächste Überprüfung:</b> ' + escapeHtml(kopfdaten.naechsteUeberpruefung || '') +
     '</div></div>';
 
-  html += printChecklist('Allgemein', pruefung.allgemein || []);
+  var aussenMeta = pruefung.ausseneinheitMeta || {};
+
+html +=
+  '<div class="sec">Außeneinheit Gerätedaten</div>' +
+  '<div class="box grid">' +
+    '<div><b>Type:</b> ' + escapeHtml(aussenMeta.type || '') + '</div>' +
+    '<div><b>Seriennummer:</b> ' + escapeHtml(aussenMeta.seriennummer || '') + '</div>' +
+  '</div>';
   html += printChecklist('Außeneinheit', pruefung.ausseneinheit || []);
 
-  (pruefung.inneneinheiten || []).forEach(function (unit, i) {
-    var title = 'Inneneinheit ' + (i + 1) + (unit.bezeichnung ? ' – ' + unit.bezeichnung : '');
-    html += printIndoorMeasurements(title + ' Messwerte', unit.messwerte || []);
-    html += printChecklist(title, unit.pruefpunkte || []);
-  });
+(pruefung.inneneinheiten || []).forEach(function (unit, i) {
+  var title = 'Inneneinheit ' + (i + 1) + (unit.bezeichnung ? ' – ' + unit.bezeichnung : '');
+
+  html +=
+    '<div class="sec">' + escapeHtml(title) + ' Gerätedaten</div>' +
+    '<div class="box grid">' +
+      '<div><b>Type:</b> ' + escapeHtml(unit.type || '') + '</div>' +
+      '<div><b>Seriennummer:</b> ' + escapeHtml(unit.seriennummer || '') + '</div>' +
+    '</div>';
+
+  html += printIndoorMeasurements(title + ' Messwerte', unit.messwerte || []);
+  html += printChecklist(title, unit.pruefpunkte || []);
+});
 
   html += printChecklist('Bedienung / Regelung', pruefung.bedienungRegelung || []);
   html += printChecklist('Leitungssystem', pruefung.leitungssystem || []);
@@ -2248,7 +2327,12 @@ function buildPdfTextLines(data) {
   add('Letzte Ueberpruefung', data.kopfdaten.letzteUeberpruefung);
   add('Naechste Ueberpruefung', data.kopfdaten.naechsteUeberpruefung);
 
-  addChecklistPdf(out, 'Allgemein', data.pruefung.allgemein);
+  var aussenMetaPdf = data.pruefung.ausseneinheitMeta || {};
+
+out.push('');
+out.push('Ausseneinheit Geraetedaten');
+add('Ausseneinheit Type', aussenMetaPdf.type);
+add('Ausseneinheit Seriennummer', aussenMetaPdf.seriennummer);
   addChecklistPdf(out, 'Ausseneinheit', data.pruefung.ausseneinheit);
 
   (data.pruefung.inneneinheiten || []).forEach(function (unit, i) {
@@ -2256,6 +2340,8 @@ function buildPdfTextLines(data) {
 
     out.push('');
     out.push(title + ' Messwerte');
+    add(title + ' Type', unit.type);
+add(title + ' Seriennummer', unit.seriennummer);
 
     (unit.messwerte || []).forEach(function (m) {
       out.push('- ' + m.label + ': ' + (m.wert || '') + ' ' + m.einheit);
