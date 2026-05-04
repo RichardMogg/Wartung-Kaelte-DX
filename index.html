@@ -1,1 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Prüf-/Wartungsprotokoll Kältetechnik</title>
 
+  <link rel="stylesheet" href="css/app.css">
+</head>
+
+<body>
+  <div class="page-bg"></div>
+
+  <header>
+    <div class="logo-wrap">
+      <svg class="logo" viewBox="0 0 520 180" role="img" aria-label="GEBATECH Gebäude- und Anlagentechnik Logo" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>
+            .gbt-black{fill:#111111}
+            .gbt-brand{fill:#c4bd18}
+            .gbt-text{fill:#111111;font-family:Arial,Helvetica,sans-serif;font-weight:900}
+            .gbt-sub{fill:#111111;font-family:Arial,Helvetica,sans-serif;font-weight:700}
+          </style>
+        </defs>
+        <g transform="translate(20 12) scale(0.85) translate(-82.111 -8.672)">
+          <path fill-rule="evenodd" clip-rule="evenodd" fill="#1D1D1B" d="M143.14,48.858v63.52l-0.312,0.002 c-17.541,0-31.761-14.22-31.761-31.761c0-17.542,14.22-31.762,31.761-31.762L143.14,48.858z M143.14,8.672v34.757l-0.312,0.004 c-5.72,0-10.428-4.337-11.015-9.901c-5.202,1.213-10.082,3.265-14.489,6.007c3.518,4.35,3.255,10.742-0.79,14.786 c-4.043,4.044-10.437,4.308-14.786,0.79c-2.745,4.413-4.8,9.301-6.011,14.513c5.545,0.604,9.861,5.303,9.861,11.01 c0,5.703-4.312,10.4-9.854,11.01c1.215,5.205,3.27,10.087,6.015,14.495c4.349-3.471,10.704-3.192,14.73,0.835 c4.025,4.024,4.305,10.376,0.839,14.725c4.406,2.741,9.285,4.792,14.486,6.004c0.635-5.514,5.318-9.794,11.003-9.795l0.322,0.005 v21.971l-61.028-0.003V44.081L143.14,8.672z"/>
+          <path fill="#D3BF00" d="M153.82,127.71c-0.621-5.411-5.141-9.637-10.681-9.795v-5.537c17.397-0.167,31.449-14.321,31.449-31.759 c0-17.438-14.052-31.594-31.449-31.761v-5.43c5.578-0.154,10.127-4.435,10.702-9.897c5.223,1.217,10.119,3.28,14.54,6.037 c-3.515,4.35-3.25,10.74,0.793,14.783c4.037,4.037,10.413,4.307,14.763,0.81c2.74,4.415,4.788,9.305,5.994,14.517 c-5.538,0.612-9.845,5.308-9.845,11.009c0,5.69,4.29,10.379,9.813,11.007c-1.218,5.196-3.274,10.07-6.018,14.472 c-4.35-3.454-10.691-3.17-14.713,0.851c-4.016,4.016-4.303,10.35-0.861,14.697C163.902,124.451,159.022,126.5,153.82,127.71z"/>
+        </g>
+        <text x="160" y="88" class="gbt-text" font-size="54">GEBA<tspan class="gbt-brand">TECH</tspan></text>
+        <text x="164" y="122" class="gbt-sub" font-size="23">GEBÄUDE | ANLAGENTECHNIK</text>
+      </svg>
+    </div>
+    <h1>Prüf-/Wartungsprotokoll Kältetechnik</h1>
+    <div class="subtitle">lt. § 22 Kältemittelverordnung und § 13 AStV</div>
+    <div class="version">LOKAL V3.5 – JSON-Import, Exportprüfung, Druck ohne Fotoliste</div>
+  </header>
+
+  <main>
+    <div id="status" class="status"></div>
+    <div id="editBanner" class="edit-banner"></div>
+
+    <details class="section" id="sectionStammdaten" open>
+      <summary>
+        <span>1. Stammdaten<span class="summary-sub" id="summaryStammdaten">Kunde und Objekt</span></span>
+      </summary>
+      <div class="section-body">
+        <div class="grid">
+          <div class="field">
+            <label for="kundeInput">Kunde <span class="required-hint">*</span></label>
+            <input id="kundeInput" required autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="objektInput">Objekt <span class="required-hint">*</span></label>
+            <input id="objektInput" required autocomplete="off">
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" id="saveStammdatenButton">Stammdaten speichern</button>
+      </div>
+    </details>
+
+    <form id="protocolForm" autocomplete="off">
+      <details class="section" id="sectionKopfdaten">
+        <summary>
+          <span>2. Kopfdaten / Anlage<span class="summary-sub" id="summaryKopfdaten">Anlagendaten, Datum, Techniker</span></span>
+        </summary>
+
+        <div class="section-body" id="kopfdatenFields">
+          <div class="grid">
+            <div class="field">
+              <label>Bezeichnung/Name</label>
+              <input data-field="bezeichnungName" autocomplete="off">
+            </div>
+
+            <div class="field">
+              <label>Anlagentyp <span class="required-hint">*</span></label>
+              <select data-field="anlagentyp" required>
+                <option value="">Anlagentyp auswählen</option>
+                <option value="Single/Mono - Split">Single/Mono - Split</option>
+                <option value="Multi Split">Multi Split</option>
+                <option value="VRF-Anlage">VRF-Anlage</option>
+                <option value="Kaltwassersatz">Kaltwassersatz</option>
+                <option value="Einzel - Kälteanlage">Einzel - Kälteanlage</option>
+                <option value="Verbund - Kälteanlage">Verbund - Kälteanlage</option>
+              </select>
+            </div>
+
+            <div class="field"><label>Kältemittel</label><input data-field="kaeltemittel"></div>
+            <div class="field"><label>Type</label><input data-field="type"></div>
+            <div class="field"><label>Gesamtleistung</label><input data-field="gesamtleistung"></div>
+            <div class="field"><label>Serien-Nr.</label><input data-field="seriennummer"></div>
+            <div class="field"><label>Datum <span class="required-hint">*</span></label><input type="date" data-field="datum" required></div>
+            <div class="field"><label>Techniker <span class="required-hint">*</span></label><input data-field="techniker" required></div>
+            <div class="field"><label>Letzte Überprüfung</label><input type="month" data-field="letzteUeberpruefung"></div>
+            <div class="field"><label>Nächste Überprüfung</label><input type="month" data-field="naechsteUeberpruefung"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionAllgemein">
+        <summary><span>3. Allgemein<span class="summary-sub" id="summaryAllgemein">Zustand, Kühlleistung, Geräusch, Füllung</span></span></summary>
+        <div class="section-body"><div id="checkAllgemein"></div></div>
+      </details>
+
+      <details class="section" id="sectionAussen">
+        <summary><span>4. Außeneinheit<span class="summary-sub" id="summaryAussen">Gehäuse, Kondensator, Ventilator usw.</span></span></summary>
+        <div class="section-body"><div id="checkAussen"></div></div>
+      </details>
+
+      <details class="section" id="sectionInnen">
+        <summary><span>5. Inneneinheiten<span class="summary-sub" id="summaryInnen">Dynamisch erweiterbar</span></span></summary>
+        <div class="section-body">
+          <div id="innenContainer"></div>
+          <button type="button" class="btn-secondary" id="addInnenButton">+ Inneneinheit hinzufügen</button>
+        </div>
+      </details>
+
+      <details class="section" id="sectionRegelung">
+        <summary><span>6. Bedienung / Regelung<span class="summary-sub" id="summaryRegelung">Funktion, Zustand, Sicherheitseinrichtung</span></span></summary>
+        <div class="section-body"><div id="checkRegelung"></div></div>
+      </details>
+
+      <details class="section" id="sectionLeitung">
+        <summary><span>7. Leitungssystem<span class="summary-sub" id="summaryLeitung">Dichtheit, Anschlüsse, Isolierung</span></span></summary>
+        <div class="section-body"><div id="checkLeitung"></div></div>
+      </details>
+
+      <details class="section" id="sectionMesswerte">
+        <summary><span>8. Gemessene Daten<span class="summary-sub" id="summaryMesswerte">Temperaturen und Drücke</span></span></summary>
+        <div class="section-body">
+          <table class="measurement-table" id="measurementTable">
+            <thead><tr><th>Messpunkt</th><th>Wert</th><th>Einheit</th></tr></thead>
+            <tbody id="measurementBody"></tbody>
+          </table>
+
+          <div class="schema-box" aria-label="Kältekreis-Schema">
+            <svg viewBox="0 0 520 330" role="img">
+              <rect x="25" y="35" width="470" height="250" fill="white" stroke="#111" stroke-width="1"/>
+              <rect x="170" y="55" width="90" height="60" fill="#f8fafc" stroke="#111"/>
+              <text x="215" y="88" font-size="13" text-anchor="middle">C</text>
+              <text x="215" y="105" font-size="11" text-anchor="middle">Verflüssiger</text>
+              <circle cx="405" cy="170" r="42" fill="#f8fafc" stroke="#111"/>
+              <text x="405" y="174" font-size="12" text-anchor="middle">V</text>
+              <text x="405" y="226" font-size="11" text-anchor="middle">Verdichter</text>
+              <rect x="170" y="220" width="90" height="50" fill="#f8fafc" stroke="#111"/>
+              <text x="215" y="249" font-size="13" text-anchor="middle">O</text>
+              <text x="215" y="287" font-size="11" text-anchor="middle">Verdampfer</text>
+              <polygon points="95,160 125,145 125,175" fill="#f8fafc" stroke="#111"/>
+              <text x="110" y="196" font-size="11" text-anchor="middle">E</text>
+              <text x="110" y="211" font-size="11" text-anchor="middle">Expansionsventil</text>
+              <path d="M260 85 H405 V128" stroke="#111" fill="none"/>
+              <path d="M405 212 V245 H260" stroke="#111" fill="none"/>
+              <path d="M170 245 H110 V175" stroke="#111" fill="none"/>
+              <path d="M125 160 V85 H170" stroke="#111" fill="none"/>
+              <text x="155" y="45" font-size="11">tc2u</text>
+              <text x="260" y="45" font-size="11">tc1h</text>
+              <text x="350" y="150" font-size="11">peV2</text>
+              <text x="350" y="205" font-size="11">peV1</text>
+              <text x="205" y="135" font-size="11">tcL1</text>
+              <text x="205" y="28" font-size="11">tcL2</text>
+            </svg>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionBemerkungen">
+        <summary><span>9. Bemerkungen<span class="summary-sub" id="summaryBemerkungen">keine Bemerkung</span></span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="bemerkungenText">Bemerkungen</label>
+            <textarea id="bemerkungenText" placeholder="Zusätzliche Hinweise, Besonderheiten oder interne Notizen"></textarea>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionFotos">
+        <summary><span>10. Fotos<span class="summary-sub" id="summaryFotos">Allgemeiner Fotobereich</span></span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="fotoInput">Fotos auswählen / aufnehmen</label>
+            <input id="fotoInput" type="file" accept="image/*" multiple>
+            <div class="small-text">Fotos werden beim Übernehmen in der Protokollliste für den ZIP-Export zwischengespeichert. Einzelne Fotos können vor dem Übernehmen wieder gelöscht werden.</div>
+          </div>
+          <div class="photo-list" id="photoList">Keine Fotos ausgewählt.</div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionGesamt">
+        <summary><span>11. Gesamtzustand / Mängel<span class="summary-sub" id="summaryGesamt">Pflichtauswahl</span></span></summary>
+        <div class="section-body">
+          <div class="overall-grid">
+            <label class="overall-option overall-ok"><input type="radio" name="gesamtzustand" value="keine Mängel" required> keine Mängel</label>
+            <label class="overall-option overall-warn"><input type="radio" name="gesamtzustand" value="leichte Mängel" required> leichte Mängel</label>
+            <label class="overall-option overall-bad"><input type="radio" name="gesamtzustand" value="mangelhaft" required> mangelhaft</label>
+          </div>
+          <div class="field mangel-field" id="globalMangelWrap">
+            <label>Gesamt-Mangelbeschreibung <span class="required-hint">*</span></label>
+            <textarea id="globalMangelText"></textarea>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionUnterschrift">
+        <summary><span>12. Techniker / Unterschrift<span class="summary-sub" id="summaryUnterschrift">Technikername und Finger-Unterschrift</span></span></summary>
+        <div class="section-body">
+          <div class="field">
+            <label for="signTechnikerInput">Technikername <span class="required-hint">*</span></label>
+            <input id="signTechnikerInput" required autocomplete="off">
+          </div>
+          <div class="signature-wrap">
+            <canvas id="signatureCanvas" width="1000" height="300"></canvas>
+            <div class="button-grid">
+              <button type="button" class="btn-light" id="clearSignatureButton">Unterschrift löschen</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionListe">
+        <summary><span>13. Protokollliste<span class="summary-sub" id="summaryListe">Noch kein Protokoll übernommen</span></span></summary>
+        <div class="section-body">
+          <div id="protocolList"></div>
+          <div class="button-grid">
+            <button type="button" class="btn-brand" id="takeProtocolButton">Protokoll in Liste übernehmen</button>
+            <button type="button" class="btn-light" id="clearFormButton">Formular leeren</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="section" id="sectionExport">
+        <summary><span>14. Export / Import<span class="summary-sub">ZIP exportieren oder JSON importieren</span></span></summary>
+        <div class="section-body">
+          <div class="button-grid">
+            <button type="button" class="btn-brand" id="exportZipButton">ZIP aller Protokolle exportieren</button>
+            <button type="button" class="btn-secondary" id="importJsonButton">JSON importieren</button>
+            <input id="importJsonInput" type="file" accept=".json,application/json" style="display:none">
+            <button type="button" class="btn-light" id="saveDraftButton">Entwurf speichern</button>
+            <button type="button" class="btn-danger" id="clearAllButton">Alles löschen</button>
+          </div>
+          <div class="small-text">Der ZIP enthält protokolle.json, protokolle.csv sowie je Protokoll eine Druckansicht, eine PDF-Datei und Fotos. Die Unterschrift ist im Protokoll eingebettet und wird nicht als separate Bilddatei exportiert. Beim JSON-Import werden Fotodateien nicht wiederhergestellt.</div>
+        </div>
+      </details>
+
+      <div class="bottom-actions">
+        <button type="button" class="btn-brand" id="bottomTakeButton">Übernehmen</button>
+        <button type="button" class="btn-secondary" id="bottomInnenButton">+ Inneneinheit</button>
+      </div>
+    </form>
+  </main>
+
+  <footer id="footerText">GEBATECH GmbH | Gebäude- und Anlagentechnik | AUSTRIA 4400 Steyr | Im Stadtgut Zone E 20 | T +43 7252 93074 | F -400 | office@gebatech.at<br>FN 471952y | UID: ATU 72271329 | IBAN: AT39 3411 4000 0015 1092 | BIC: RZOOAT2L114 | Gerichtsstand: Landesgericht Steyr | www.gebatech.at</footer>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>
