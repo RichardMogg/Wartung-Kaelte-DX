@@ -66,12 +66,12 @@ var PRINT_GEAR_BACKGROUND = {
   rightMm: 0,
 
   // sichtbarer Ausschnitt oben rechts
-  boxWidthMm: 80,
-  boxHeightMm: 80,
+  boxWidthMm: 85,
+  boxHeightMm: 85,
 
   // Gesamtgröße des Zahnrads vor dem Beschneiden
   // Da nur das linke untere Viertel sichtbar sein soll,
   // ist das Zahnrad etwa doppelt so groß wie die sichtbare Box.
-  svgWidthMm: 160,
-  svgHeightMm: 160
+  svgWidthMm: 170,
+  svgHeightMm: 170
 };
