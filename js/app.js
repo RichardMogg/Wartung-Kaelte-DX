@@ -17,6 +17,8 @@ var photoStore = {};
 var currentPhotos = [];
 var logoSvgCache = '';
 var logoSvgLoading = null;
+var printGearSvgCache = '';
+var printGearSvgLoading = null;
 
 window.addEventListener('load', function () {
   setDefaultDate();
@@ -25,6 +27,7 @@ window.addEventListener('load', function () {
   bindEvents();
   addCollapseButtons();
   initSignatureCanvas();
+  loadPrintGearSvg();
   loadSharedLogoSvg();
   loadState();
   restoreDraft();
@@ -1578,11 +1581,12 @@ async function exportZip() {
     return;
   }
 
-  await loadSharedLogoSvg();
+await loadSharedLogoSvg();
+await loadPrintGearSvg();
 
-  setStatus('ZIP wird erstellt ...', 'ok');
+setStatus('ZIP wird erstellt ...', 'ok');
 
-  try {
+try {
     var files = [];
     var exportData = buildExportData();
 
@@ -1808,10 +1812,146 @@ function getPrintLogoSvgDirect() {
     '<text x="164" y="122" class="gbt-sub" font-size="23">GEBÄUDE | ANLAGENTECHNIK</text>' +
   '</svg>';
 }
+function getPrintGearConfig() {
+  var defaults = {
+    enabled: true,
+    opacity: 0.12,
+    imagePath: 'assets/frontpage-gear.svg',
+    topMm: 0,
+    rightMm: 0,
+    boxWidthMm: 80,
+    boxHeightMm: 80,
+    svgWidthMm: 160,
+    svgHeightMm: 160
+  };
+
+  if (typeof PRINT_GEAR_BACKGROUND !== 'object' || PRINT_GEAR_BACKGROUND === null) {
+    return defaults;
+  }
+
+  return {
+    enabled: PRINT_GEAR_BACKGROUND.enabled !== false,
+    opacity: Number(PRINT_GEAR_BACKGROUND.opacity ?? defaults.opacity),
+    imagePath: PRINT_GEAR_BACKGROUND.imagePath || defaults.imagePath,
+    topMm: Number(PRINT_GEAR_BACKGROUND.topMm ?? defaults.topMm),
+    rightMm: Number(PRINT_GEAR_BACKGROUND.rightMm ?? defaults.rightMm),
+    boxWidthMm: Number(PRINT_GEAR_BACKGROUND.boxWidthMm ?? defaults.boxWidthMm),
+    boxHeightMm: Number(PRINT_GEAR_BACKGROUND.boxHeightMm ?? defaults.boxHeightMm),
+    svgWidthMm: Number(PRINT_GEAR_BACKGROUND.svgWidthMm ?? defaults.svgWidthMm),
+    svgHeightMm: Number(PRINT_GEAR_BACKGROUND.svgHeightMm ?? defaults.svgHeightMm)
+  };
+}
+
+function loadPrintGearSvg() {
+  var cfg = getPrintGearConfig();
+
+  if (!cfg.enabled) {
+    return Promise.resolve('');
+  }
+
+  if (printGearSvgCache) {
+    return Promise.resolve(printGearSvgCache);
+  }
+
+  if (printGearSvgLoading) {
+    return printGearSvgLoading;
+  }
+
+  printGearSvgLoading = fetch(cfg.imagePath)
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error('Hintergrund-Zahnrad konnte nicht geladen werden: HTTP ' + response.status);
+      }
+
+      return response.text();
+    })
+    .then(function (svgText) {
+      printGearSvgCache = normalizePrintGearSvg(svgText);
+      return printGearSvgCache;
+    })
+    .catch(function (err) {
+      console.warn(getErrorText(err));
+      printGearSvgLoading = null;
+      return '';
+    });
+
+  return printGearSvgLoading;
+}
+
+function normalizePrintGearSvg(svgText) {
+  var text = String(svgText || '').trim();
+
+  text = text.replace(/<\?xml[^>]*>\s*/i, '');
+  text = text.replace(/<!DOCTYPE[^>]*>\s*/i, '');
+
+  text = text.replace(/<svg\b([^>]*)>/i, function (match, attrs) {
+    if (/aria-hidden=/.test(match)) {
+      return match;
+    }
+
+    return '<svg' + attrs + ' aria-hidden="true" focusable="false">';
+  });
+
+  return text;
+}
+
+function buildPrintGearCss() {
+  var cfg = getPrintGearConfig();
+
+  if (!cfg.enabled) {
+    return '';
+  }
+
+  return [
+    '.print-gear-bg{',
+      'position:fixed;',
+      'top:' + cfg.topMm + 'mm;',
+      'right:' + cfg.rightMm + 'mm;',
+      'width:' + cfg.boxWidthMm + 'mm;',
+      'height:' + cfg.boxHeightMm + 'mm;',
+      'overflow:hidden;',
+      'z-index:0;',
+      'opacity:' + cfg.opacity + ';',
+      'pointer-events:none;',
+      '-webkit-print-color-adjust:exact;',
+      'print-color-adjust:exact;',
+    '}',
+    '.print-gear-crop{',
+      'position:absolute;',
+      'left:0;',
+      'bottom:0;',
+      'width:' + cfg.svgWidthMm + 'mm;',
+      'height:' + cfg.svgHeightMm + 'mm;',
+    '}',
+    '.print-gear-crop svg{',
+      'width:' + cfg.svgWidthMm + 'mm;',
+      'height:' + cfg.svgHeightMm + 'mm;',
+      'display:block;',
+    '}',
+    '@media print{',
+      '.print-gear-bg{',
+        '-webkit-print-color-adjust:exact;',
+        'print-color-adjust:exact;',
+      '}',
+    '}'
+  ].join('');
+}
+
+function getPrintGearBackgroundHtml() {
+  var cfg = getPrintGearConfig();
+
+  if (!cfg.enabled || !printGearSvgCache) {
+    return '';
+  }
+
+  return '<div class="print-gear-bg"><div class="print-gear-crop">' + printGearSvgCache + '</div></div>';
+}
+
 function buildPrintHtml(data) {
   var css = [
     'body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:24px;position:relative}',
     '.print-content{position:relative;z-index:1}',
+    buildPrintGearCss(),
     '.logo{text-align:center;margin-bottom:8px}',
     '.logo svg{width:190px;height:auto;display:inline-block}',
     'h1{text-align:center;font-size:20px;margin:0 0 4px 0}',
@@ -1837,11 +1977,12 @@ function buildPrintHtml(data) {
   var pruefung = data.pruefung || {};
   var unterschrift = data.unterschrift || {};
 
-  var html =
-    '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-    '<title>Prüf-/Wartungsprotokoll Kältetechnik</title>' +
-    '<style>' + css + '</style></head><body>' +
-    '<div class="print-content">';
+var html =
+  '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+  '<title>Prüf-/Wartungsprotokoll Kältetechnik</title>' +
+  '<style>' + css + '</style></head><body>' +
+  getPrintGearBackgroundHtml() +
+  '<div class="print-content">';
 
 html +=
   '<div class="logo">' + getPrintLogoSvgDirect() + '</div>' +
