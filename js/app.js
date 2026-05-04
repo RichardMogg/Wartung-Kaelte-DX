@@ -24,6 +24,7 @@ window.addEventListener('load', function () {
   setDefaultDate();
   renderStaticChecklists();
   renderMeasurements();
+  loadRefrigerantOptions();
   bindEvents();
   addCollapseButtons();
   initSignatureCanvas();
@@ -42,6 +43,52 @@ window.addEventListener('load', function () {
   setStatus('Wartungsprotokoll V3.5 geladen. JSON-Import aktiv.', 'ok');
   startAtTop();
 });
+
+function loadRefrigerantOptions() {
+  var select = document.getElementById('kaeltemittelSelect');
+
+  if (!select) {
+    return;
+  }
+
+  fetch('data/kaeltemittel.txt')
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error('Kältemittelliste konnte nicht geladen werden: HTTP ' + response.status);
+      }
+
+      return response.text();
+    })
+    .then(function (text) {
+      var selectedValue = select.value;
+
+      var items = text
+        .split(/\r?\n/)
+        .map(function (line) {
+          return line.trim();
+        })
+        .filter(function (line) {
+          return line && line.charAt(0) !== '#';
+        });
+
+      select.innerHTML = '<option value="">Kältemittel auswählen</option>';
+
+      items.forEach(function (item) {
+        var option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        select.appendChild(option);
+      });
+
+      if (selectedValue) {
+        select.value = selectedValue;
+      }
+    })
+    .catch(function (err) {
+      console.warn(getErrorText(err));
+      setStatus('Hinweis: Kältemittelliste konnte nicht geladen werden.', 'error');
+    });
+}
 
 function startAtTop() {
   document.querySelectorAll('details.section').forEach(function (section) {
