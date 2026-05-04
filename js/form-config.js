@@ -51,3 +51,27 @@ var INDOOR_MEASUREMENTS = [
   { key: 'to2h', label: 'to2h (Temp. Verdampferaustritt)', unit: '°C' }
 ];
 
+
+var PRINT_GEAR_BACKGROUND = {
+  enabled: true,
+
+  // Deckkraft: 0 = unsichtbar, 1 = volle Deckkraft
+  opacity: 0.12,
+
+  // SVG-Datei
+  imagePath: 'assets/frontpage-gear.svg',
+
+  // Position auf der A4-Seite
+  topMm: 0,
+  rightMm: 0,
+
+  // sichtbarer Ausschnitt oben rechts
+  boxWidthMm: 80,
+  boxHeightMm: 80,
+
+  // Gesamtgröße des Zahnrads vor dem Beschneiden
+  // Da nur das linke untere Viertel sichtbar sein soll,
+  // ist das Zahnrad etwa doppelt so groß wie die sichtbare Box.
+  svgWidthMm: 160,
+  svgHeightMm: 160
+};
