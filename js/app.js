@@ -1857,7 +1857,6 @@ var kopfdatenLabels = {
   kaeltemittel: 'Kältemittel',
   type: 'Hersteller/Marke',
   gesamtleistung: 'Gesamtleistung',
-  seriennummer: 'Serien-Nr.',
   datum: 'Datum',
   techniker: 'Techniker',
   letzteUeberpruefung: 'Letzte Überprüfung',
@@ -2225,7 +2224,7 @@ html +=
     '<br><b>Kältemittel:</b> ' + escapeHtml(kopfdaten.kaeltemittel || '') +
     '<br><b>Hersteller/Marke:</b> ' + escapeHtml(kopfdaten.type || '') +
     '<br><b>Gesamtleistung:</b> ' + escapeHtml(kopfdaten.gesamtleistung || '') +
-    '<br><b>Serien-Nr.:</b> ' + escapeHtml(kopfdaten.seriennummer || '') +
+    
     '</div><div><b>Datum:</b> ' + escapeHtml(kopfdaten.datum || '') +
     '<br><b>Techniker:</b> ' + escapeHtml(kopfdaten.techniker || '') +
     '<br><b>Letzte Überprüfung:</b> ' + escapeHtml(kopfdaten.letzteUeberpruefung || '') +
@@ -2391,7 +2390,7 @@ function buildPdfTextLines(data) {
   add('Kaeltemittel', data.kopfdaten.kaeltemittel);
   add('Hersteller/Marke', data.kopfdaten.type);
   add('Gesamtleistung', data.kopfdaten.gesamtleistung);
-  add('Serien-Nr.', data.kopfdaten.seriennummer);
+  
   add('Datum', data.kopfdaten.datum);
   add('Techniker', data.kopfdaten.techniker);
   add('Letzte Ueberpruefung', data.kopfdaten.letzteUeberpruefung);
