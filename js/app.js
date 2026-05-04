@@ -1796,6 +1796,7 @@ function buildPrintHtml(data) {
     'body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:24px;position:relative}',
     '.print-content{position:relative;z-index:1}',
     '.logo{text-align:center;margin-bottom:8px}',
+    '.logo svg{width:190px;height:auto;display:inline-block}',
     'h1{text-align:center;font-size:20px;margin:0 0 4px 0}',
     '.sub{text-align:center;font-weight:bold;margin-bottom:14px}',
     '.box{border:1px solid #111;padding:8px;margin-bottom:10px}',
@@ -1823,10 +1824,10 @@ function buildPrintHtml(data) {
     '<style>' + css + '</style></head><body>' +
     '<div class="print-content">';
 
-  html +=
-    '<div class="logo">' + getInlineLogoSvg() + '</div>' +
-    '<h1>Prüf-/Wartungsprotokoll Kältetechnik</h1>' +
-    '<div class="sub">lt. § 22 Kältemittelverordnung und § 13 AStV</div>';
+html +=
+  '<div class="logo">' + getPrintLogoSvgDirect() + '</div>' +
+  '<h1>Prüf-/Wartungsprotokoll Kältetechnik</h1>' +
+  '<div class="sub">lt. § 22 Kältemittelverordnung und § 13 AStV</div>';
 
   html +=
     '<div class="box grid"><div><b>Kunde:</b> ' + escapeHtml(stammdaten.kunde || '') +
