@@ -12,9 +12,9 @@
   <div class="page-bg"></div>
 
   <header>
-   <div class="logo-wrap">
-  <img class="logo" src="assets/logo.svg" alt="GEBATECH Gebäude- und Anlagentechnik Logo">
-</div>
+    <div class="logo-wrap">
+      <img class="logo" src="assets/logo.svg" alt="GEBATECH Gebäude- und Anlagentechnik Logo">
+    </div>
     <h1>Prüf-/Wartungsprotokoll Kältetechnik</h1>
     <div class="subtitle">lt. § 22 Kältemittelverordnung und § 13 AStV</div>
     <div class="version">LOKAL V3.5 – JSON-Import, Exportprüfung, Druck ohne Fotoliste</div>
@@ -63,6 +63,7 @@
                 <option value="Single/Mono - Split">Single/Mono - Split</option>
                 <option value="Multi Split">Multi Split</option>
                 <option value="VRF-Anlage">VRF-Anlage</option>
+                <option value="Kaltwassersatz">Kaltwassersatz</option>
                 <option value="Einzel - Kälteanlage">Einzel - Kälteanlage</option>
                 <option value="Verbund - Kälteanlage">Verbund - Kälteanlage</option>
               </select>
@@ -80,18 +81,28 @@
         </div>
       </details>
 
-      <details class="section" id="sectionAllgemein">
-        <summary><span>3. Allgemein<span class="summary-sub" id="summaryAllgemein">Zustand, Kühlleistung, Geräusch, Füllung</span></span></summary>
-        <div class="section-body"><div id="checkAllgemein"></div></div>
-      </details>
-
       <details class="section" id="sectionAussen">
-        <summary><span>4. Außeneinheit<span class="summary-sub" id="summaryAussen">Gehäuse, Kondensator, Ventilator usw.</span></span></summary>
-        <div class="section-body"><div id="checkAussen"></div></div>
+        <summary>
+          <span>3. Außeneinheit<span class="summary-sub" id="summaryAussen">Gerätedaten, Zustand, Kühlleistung, Kältemittelfüllung</span></span>
+        </summary>
+        <div class="section-body">
+          <div class="grid">
+            <div class="field">
+              <label for="aussenTypeInput">Type <span class="required-hint">*</span></label>
+              <input id="aussenTypeInput" required autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="aussenSeriennummerInput">Seriennummer <span class="required-hint">*</span></label>
+              <input id="aussenSeriennummerInput" required autocomplete="off">
+            </div>
+          </div>
+
+          <div id="checkAussen"></div>
+        </div>
       </details>
 
       <details class="section" id="sectionInnen">
-        <summary><span>5. Inneneinheiten<span class="summary-sub" id="summaryInnen">Dynamisch erweiterbar</span></span></summary>
+        <summary><span>4. Inneneinheiten<span class="summary-sub" id="summaryInnen">Dynamisch erweiterbar</span></span></summary>
         <div class="section-body">
           <div id="innenContainer"></div>
           <button type="button" class="btn-secondary" id="addInnenButton">+ Inneneinheit hinzufügen</button>
@@ -99,17 +110,17 @@
       </details>
 
       <details class="section" id="sectionRegelung">
-        <summary><span>6. Bedienung / Regelung<span class="summary-sub" id="summaryRegelung">Funktion, Zustand, Sicherheitseinrichtung</span></span></summary>
+        <summary><span>5. Bedienung / Regelung<span class="summary-sub" id="summaryRegelung">Funktion, Zustand, Sicherheitseinrichtung</span></span></summary>
         <div class="section-body"><div id="checkRegelung"></div></div>
       </details>
 
       <details class="section" id="sectionLeitung">
-        <summary><span>7. Leitungssystem<span class="summary-sub" id="summaryLeitung">Dichtheit, Anschlüsse, Isolierung</span></span></summary>
+        <summary><span>6. Leitungssystem<span class="summary-sub" id="summaryLeitung">Dichtheit, Anschlüsse, Isolierung</span></span></summary>
         <div class="section-body"><div id="checkLeitung"></div></div>
       </details>
 
       <details class="section" id="sectionMesswerte">
-        <summary><span>8. Gemessene Daten<span class="summary-sub" id="summaryMesswerte">Temperaturen und Drücke</span></span></summary>
+        <summary><span>7. Gemessene Daten<span class="summary-sub" id="summaryMesswerte">Temperaturen und Drücke</span></span></summary>
         <div class="section-body">
           <table class="measurement-table" id="measurementTable">
             <thead><tr><th>Messpunkt</th><th>Wert</th><th>Einheit</th></tr></thead>
@@ -147,7 +158,7 @@
       </details>
 
       <details class="section" id="sectionBemerkungen">
-        <summary><span>9. Bemerkungen<span class="summary-sub" id="summaryBemerkungen">keine Bemerkung</span></span></summary>
+        <summary><span>8. Bemerkungen<span class="summary-sub" id="summaryBemerkungen">keine Bemerkung</span></span></summary>
         <div class="section-body">
           <div class="field">
             <label for="bemerkungenText">Bemerkungen</label>
@@ -157,7 +168,7 @@
       </details>
 
       <details class="section" id="sectionFotos">
-        <summary><span>10. Fotos<span class="summary-sub" id="summaryFotos">Allgemeiner Fotobereich</span></span></summary>
+        <summary><span>9. Fotos<span class="summary-sub" id="summaryFotos">Allgemeiner Fotobereich</span></span></summary>
         <div class="section-body">
           <div class="field">
             <label for="fotoInput">Fotos auswählen / aufnehmen</label>
@@ -169,7 +180,7 @@
       </details>
 
       <details class="section" id="sectionGesamt">
-        <summary><span>11. Gesamtzustand / Mängel<span class="summary-sub" id="summaryGesamt">Pflichtauswahl</span></span></summary>
+        <summary><span>10. Gesamtzustand / Mängel<span class="summary-sub" id="summaryGesamt">Pflichtauswahl</span></span></summary>
         <div class="section-body">
           <div class="overall-grid">
             <label class="overall-option overall-ok"><input type="radio" name="gesamtzustand" value="keine Mängel" required> keine Mängel</label>
@@ -184,7 +195,7 @@
       </details>
 
       <details class="section" id="sectionUnterschrift">
-        <summary><span>12. Techniker / Unterschrift<span class="summary-sub" id="summaryUnterschrift">Technikername und Finger-Unterschrift</span></span></summary>
+        <summary><span>11. Techniker / Unterschrift<span class="summary-sub" id="summaryUnterschrift">Technikername und Finger-Unterschrift</span></span></summary>
         <div class="section-body">
           <div class="field">
             <label for="signTechnikerInput">Technikername <span class="required-hint">*</span></label>
@@ -200,7 +211,7 @@
       </details>
 
       <details class="section" id="sectionListe">
-        <summary><span>13. Protokollliste<span class="summary-sub" id="summaryListe">Noch kein Protokoll übernommen</span></span></summary>
+        <summary><span>12. Protokollliste<span class="summary-sub" id="summaryListe">Noch kein Protokoll übernommen</span></span></summary>
         <div class="section-body">
           <div id="protocolList"></div>
           <div class="button-grid">
@@ -211,7 +222,7 @@
       </details>
 
       <details class="section" id="sectionExport">
-        <summary><span>14. Export / Import<span class="summary-sub">ZIP exportieren oder JSON importieren</span></span></summary>
+        <summary><span>13. Export / Import<span class="summary-sub">ZIP exportieren oder JSON importieren</span></span></summary>
         <div class="section-body">
           <div class="button-grid">
             <button type="button" class="btn-brand" id="exportZipButton">ZIP aller Protokolle exportieren</button>
@@ -233,7 +244,7 @@
 
   <footer id="footerText">GEBATECH GmbH | Gebäude- und Anlagentechnik | AUSTRIA 4400 Steyr | Im Stadtgut Zone E 20 | T +43 7252 93074 | F -400 | office@gebatech.at<br>FN 471952y | UID: ATU 72271329 | IBAN: AT39 3411 4000 0015 1092 | BIC: RZOOAT2L114 | Gerichtsstand: Landesgericht Steyr | www.gebatech.at</footer>
 
-<script src="js/form-config.js" defer></script>
-<script src="js/app.js" defer></script>
+  <script src="js/form-config.js?v=20260504-2" defer></script>
+  <script src="js/app.js?v=20260504-2" defer></script>
 </body>
 </html>
