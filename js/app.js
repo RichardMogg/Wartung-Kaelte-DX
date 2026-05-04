@@ -15,6 +15,8 @@ var appState = {
 
 var photoStore = {};
 var currentPhotos = [];
+var logoSvgCache = '';
+var logoSvgLoading = null;
 
 window.addEventListener('load', function () {
   setDefaultDate();
