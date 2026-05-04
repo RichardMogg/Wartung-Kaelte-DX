@@ -1804,9 +1804,32 @@ function buildCsvForProtocols(records) {
     rows.push([record.recordId, 'Stammdaten', '', 'Kunde', data.stammdaten.kunde, '', '', '', '']);
     rows.push([record.recordId, 'Stammdaten', '', 'Objekt', data.stammdaten.objekt, '', '', '', '']);
 
-    Object.keys(data.kopfdaten || {}).forEach(function (key) {
-      rows.push([record.recordId, 'Kopfdaten', '', key, data.kopfdaten[key], '', '', '', '']);
-    });
+var kopfdatenLabels = {
+  bezeichnungName: 'Raum-/Bezeichnung/Name',
+  anlagentyp: 'Anlagentyp',
+  kaeltemittel: 'Kältemittel',
+  type: 'Hersteller/Marke',
+  gesamtleistung: 'Gesamtleistung',
+  seriennummer: 'Serien-Nr.',
+  datum: 'Datum',
+  techniker: 'Techniker',
+  letzteUeberpruefung: 'Letzte Überprüfung',
+  naechsteUeberpruefung: 'Nächste Überprüfung'
+};
+
+Object.keys(data.kopfdaten || {}).forEach(function (key) {
+  rows.push([
+    record.recordId,
+    'Kopfdaten',
+    '',
+    kopfdatenLabels[key] || key,
+    data.kopfdaten[key],
+    '',
+    '',
+    '',
+    ''
+  ]);
+});
 
     var aussenMeta = data.pruefung.ausseneinheitMeta || {};
 
@@ -2153,7 +2176,7 @@ html +=
     '<br><b>Bezeichnung/Name:</b> ' + escapeHtml(kopfdaten.bezeichnungName || '') +
     '<br><b>Anlagentyp:</b> ' + escapeHtml(kopfdaten.anlagentyp || '') +
     '<br><b>Kältemittel:</b> ' + escapeHtml(kopfdaten.kaeltemittel || '') +
-    '<br><b>Type:</b> ' + escapeHtml(kopfdaten.type || '') +
+    '<br><b>Hersteller/Marke:</b> ' + escapeHtml(kopfdaten.type || '') +
     '<br><b>Gesamtleistung:</b> ' + escapeHtml(kopfdaten.gesamtleistung || '') +
     '<br><b>Serien-Nr.:</b> ' + escapeHtml(kopfdaten.seriennummer || '') +
     '</div><div><b>Datum:</b> ' + escapeHtml(kopfdaten.datum || '') +
@@ -2319,7 +2342,7 @@ function buildPdfTextLines(data) {
   add('Bezeichnung/Name', data.kopfdaten.bezeichnungName);
   add('Anlagentyp', data.kopfdaten.anlagentyp);
   add('Kaeltemittel', data.kopfdaten.kaeltemittel);
-  add('Type', data.kopfdaten.type);
+  add('Hersteller/Marke', data.kopfdaten.type);
   add('Gesamtleistung', data.kopfdaten.gesamtleistung);
   add('Serien-Nr.', data.kopfdaten.seriennummer);
   add('Datum', data.kopfdaten.datum);
