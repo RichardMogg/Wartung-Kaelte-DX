@@ -2341,7 +2341,7 @@ async function generatePrintPdfBytes(data) {
 
     var canvas = await html2canvas(source, {
       backgroundColor: '#ffffff',
-      scale:3,
+      scale: 2.5,
       useCORS: true,
       allowTaint: true,
       logging: false,
