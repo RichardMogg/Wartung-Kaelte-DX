@@ -1703,8 +1703,8 @@ try {
       var record = appState.protocols[i];
       var folder = 'protokoll_' + pad3(i + 1) + '/';
 
-      files.push({ name: folder + 'druckansicht.html', data: utf8(buildPrintHtml(record.data)) });
-      files.push({ name: folder + 'protokoll.pdf', data: generatePdfBytes(record.data) });
+files.push({ name: folder + 'druckansicht.html', data: utf8(buildPrintHtml(record.data)) });
+files.push({ name: folder + 'protokoll.pdf', data: await generatePrintPdfBytes(record.data) });
 
       var photos = photoStore[record.recordId] || [];
 
