@@ -2232,7 +2232,118 @@ function printChecklist(title, rows) {
   return html;
 }
 
+async function generatePrintPdfBytes(data) {
+  if (typeof html2pdf !== 'function') {
+    throw new Error('PDF-Bibliothek fehlt: vendor/html2pdf.bundle.min.js wurde nicht geladen.');
+  }
 
+  var iframe = document.createElement('iframe');
+
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-10000px';
+  iframe.style.top = '0';
+  iframe.style.width = '210mm';
+  iframe.style.height = '297mm';
+  iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  iframe.setAttribute('aria-hidden', 'true');
+
+  document.body.appendChild(iframe);
+
+  try {
+    var doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    doc.open();
+    doc.write(buildPrintHtml(data));
+    doc.close();
+
+    await waitForPrintDocumentReady(iframe);
+    await waitForImagesInDocument(doc);
+
+    var source = doc.body;
+
+    var options = {
+      margin: 0,
+      filename: 'protokoll.pdf',
+      image: {
+        type: 'jpeg',
+        quality: 0.98
+      },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: doc.documentElement.scrollWidth || 794
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: {
+        mode: ['css', 'legacy']
+      }
+    };
+
+    var arrayBuffer = await html2pdf()
+      .set(options)
+      .from(source)
+      .outputPdf('arraybuffer');
+
+    return new Uint8Array(arrayBuffer);
+  } finally {
+    document.body.removeChild(iframe);
+  }
+}
+
+function waitForPrintDocumentReady(iframe) {
+  return new Promise(function (resolve) {
+    var done = false;
+
+    function finish() {
+      if (done) {
+        return;
+      }
+
+      done = true;
+
+      setTimeout(function () {
+        resolve();
+      }, 150);
+    }
+
+    var doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    if (doc && (doc.readyState === 'complete' || doc.readyState === 'interactive')) {
+      finish();
+      return;
+    }
+
+    iframe.onload = finish;
+
+    setTimeout(finish, 800);
+  });
+}
+
+function waitForImagesInDocument(doc) {
+  var images = Array.prototype.slice.call(doc.images || []);
+
+  if (!images.length) {
+    return Promise.resolve();
+  }
+
+  return Promise.all(images.map(function (img) {
+    if (img.complete) {
+      return Promise.resolve();
+    }
+
+    return new Promise(function (resolve) {
+      img.onload = resolve;
+      img.onerror = resolve;
+    });
+  }));
+}
 
 function loadSharedLogoSvg() {
   logoSvgCache = getInlineLogoSvg();
