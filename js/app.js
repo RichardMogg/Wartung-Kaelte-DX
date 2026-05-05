@@ -1009,6 +1009,35 @@ function getAllProtocolValidationIssuesForExport() {
   return allIssues;
 }
 
+function getPhotoExportIssues() {
+  var issues = [];
+
+  for (var i = 0; i < appState.protocols.length; i++) {
+    var record = appState.protocols[i] || {};
+    var data = record.data || {};
+    var expectedPhotos = Array.isArray(data.fotos) ? data.fotos.length : 0;
+    var availablePhotos = record.recordId && photoStore[record.recordId]
+      ? photoStore[record.recordId].length
+      : 0;
+
+    if (expectedPhotos > availablePhotos) {
+      issues.push(
+        'Protokoll ' +
+        (i + 1) +
+        ' / ' +
+        (record.recordId || 'ohne ID') +
+        ': ' +
+        expectedPhotos +
+        ' Foto(s) im Protokoll vermerkt, aber nur ' +
+        availablePhotos +
+        ' Fotodatei(en) geladen. Fotos erneut auswählen und Protokoll erneut übernehmen.'
+      );
+    }
+  }
+
+  return issues;
+}
+
 function getProtocolValidationIssues(data, label) {
   var issues = [];
 
@@ -1687,8 +1716,25 @@ async function exportZip() {
     return;
   }
 
-await loadSharedLogoSvg();
-await loadPrintGearSvg();
+  var photoIssues = getPhotoExportIssues();
+
+  if (photoIssues.length > 0) {
+    var photoMessage =
+      'Export nicht möglich. Es fehlen Fotodateien für den ZIP-Export:' +
+      lineBreak + lineBreak +
+      '- ' + photoIssues.slice(0, 20).join(lineBreak + '- ');
+
+    if (photoIssues.length > 20) {
+      photoMessage += lineBreak + '- ... weitere ' + (photoIssues.length - 20) + ' Punkt(e)';
+    }
+
+    setStatus(photoMessage, 'error');
+    openSection('sectionListe', true);
+    return;
+  }
+
+  await loadSharedLogoSvg();
+  await loadPrintGearSvg();
 
 setStatus('ZIP mit Druckansicht-PDFs wird erstellt ...', 'ok');
 
