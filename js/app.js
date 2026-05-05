@@ -1948,14 +1948,14 @@ function getPrintLogoSvgDirect() {
 function getPrintGearConfig() {
   var defaults = {
     enabled: true,
-    opacity: 0.12,
+    opacity: 1,
     imagePath: 'assets/frontpage-gear.svg',
     topMm: 0,
     rightMm: 0,
-    boxWidthMm: 80,
-    boxHeightMm: 80,
-    svgWidthMm: 160,
-    svgHeightMm: 160
+    boxWidthMm: 85,
+    boxHeightMm: 85,
+    svgWidthMm: 150,
+    svgHeightMm: 150
   };
 
   if (typeof PRINT_GEAR_BACKGROUND !== 'object' || PRINT_GEAR_BACKGROUND === null) {
@@ -2005,6 +2005,7 @@ function loadPrintGearSvg() {
     .catch(function (err) {
       console.warn(getErrorText(err));
       printGearSvgLoading = null;
+      printGearSvgCache = '';
       return '';
     });
 
@@ -2063,8 +2064,9 @@ function buildPrintGearCss() {
     '}',
     '@media print{',
       '.print-gear-bg{',
-        '-webkit-print-color-adjust:exact;',
-        'print-color-adjust:exact;',
+        'position:fixed!important;',
+        '-webkit-print-color-adjust:exact!important;',
+        'print-color-adjust:exact!important;',
       '}',
     '}'
   ].join('');
@@ -2078,100 +2080,6 @@ function getPrintGearBackgroundHtml() {
   }
 
   return '<div class="print-gear-bg"><div class="print-gear-crop">' + printGearSvgCache + '</div></div>';
-}
-
-function getPrintGearConfig() {
-  var defaults = {
-    enabled: true,
-    opacity: 0.35,
-    topMm: 0,
-    rightMm: 0,
-    boxWidthMm: 85,
-    boxHeightMm: 85,
-    svgWidthMm: 170,
-    svgHeightMm: 170
-  };
-
-  if (typeof PRINT_GEAR_BACKGROUND !== 'object' || PRINT_GEAR_BACKGROUND === null) {
-    return defaults;
-  }
-
-  return {
-    enabled: PRINT_GEAR_BACKGROUND.enabled !== false,
-    opacity: Number(PRINT_GEAR_BACKGROUND.opacity ?? defaults.opacity),
-    topMm: Number(PRINT_GEAR_BACKGROUND.topMm ?? defaults.topMm),
-    rightMm: Number(PRINT_GEAR_BACKGROUND.rightMm ?? defaults.rightMm),
-    boxWidthMm: Number(PRINT_GEAR_BACKGROUND.boxWidthMm ?? defaults.boxWidthMm),
-    boxHeightMm: Number(PRINT_GEAR_BACKGROUND.boxHeightMm ?? defaults.boxHeightMm),
-    svgWidthMm: Number(PRINT_GEAR_BACKGROUND.svgWidthMm ?? defaults.svgWidthMm),
-    svgHeightMm: Number(PRINT_GEAR_BACKGROUND.svgHeightMm ?? defaults.svgHeightMm)
-  };
-}
-
-function loadPrintGearSvg() {
-  return Promise.resolve(getPrintGearSvgInline());
-}
-
-function getPrintGearSvgInline() {
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" aria-hidden="true" focusable="false">' +
-    '<path fill="#D3BF00" fill-rule="evenodd" clip-rule="evenodd" d="' +
-      'M87.013,249.988c0-90,72.957-162.957,162.957-162.957s162.957,72.957,162.957,162.957S339.97,412.945,249.97,412.945S87.013,339.988,87.013,249.988z ' +
-      'M8.357,193.592c6.216-26.736,16.755-51.814,30.842-74.457c22.317,18.046,55.116,16.694,75.864-4.054s22.1-53.547,4.054-75.865c22.609-14.065,47.647-24.595,74.34-30.814c3.011,28.552,27.163,50.8,56.513,50.8s53.503-22.248,56.514-50.8c26.793,6.243,51.918,16.828,74.594,30.973c-18.029,22.318-16.673,55.104,4.07,75.848c20.711,20.711,53.428,22.097,75.744,4.155c14.057,22.652,24.566,47.736,30.752,74.477c-28.413,3.144-50.51,27.232-50.51,56.484c0,29.196,22.016,53.25,50.352,56.468c-6.25,26.664-16.799,51.673-30.88,74.252c-22.31-17.719-54.849-16.264-75.478,4.365c-20.605,20.606-22.078,53.1-4.422,75.408c-22.608,14.049-47.644,24.567-74.333,30.768c-3.249-28.301-27.285-50.278-56.456-50.277c-29.161,0-53.191,21.965-56.453,50.253c-26.686-6.217-51.719-16.741-74.322-30.801c17.781-22.312,16.347-54.902-4.305-75.553c-20.659-20.658-53.266-22.086-75.577-4.284C25.175,358.322,14.63,333.275,8.4,306.57c28.433-3.125,50.553-27.224,50.552-56.488C58.952,220.804,36.81,196.697,8.357,193.592z' +
-    '"/>' +
-  '</svg>';
-}
-
-function buildPrintGearCss() {
-  var cfg = getPrintGearConfig();
-
-  if (!cfg.enabled) {
-    return '';
-  }
-
-  return [
-    '.print-gear-bg{',
-      'position:fixed;',
-      'top:' + cfg.topMm + 'mm;',
-      'right:' + cfg.rightMm + 'mm;',
-      'width:' + cfg.boxWidthMm + 'mm;',
-      'height:' + cfg.boxHeightMm + 'mm;',
-      'overflow:hidden;',
-      'z-index:0;',
-      'opacity:' + cfg.opacity + ';',
-      'pointer-events:none;',
-      '-webkit-print-color-adjust:exact;',
-      'print-color-adjust:exact;',
-    '}',
-    '.print-gear-crop{',
-      'position:absolute;',
-      'left:0;',
-      'bottom:0;',
-      'width:' + cfg.svgWidthMm + 'mm;',
-      'height:' + cfg.svgHeightMm + 'mm;',
-    '}',
-    '.print-gear-crop svg{',
-      'width:' + cfg.svgWidthMm + 'mm;',
-      'height:' + cfg.svgHeightMm + 'mm;',
-      'display:block;',
-    '}',
-    '@media print{',
-      '.print-gear-bg{',
-        'position:fixed!important;',
-        '-webkit-print-color-adjust:exact!important;',
-        'print-color-adjust:exact!important;',
-      '}',
-    '}'
-  ].join('');
-}
-
-function getPrintGearBackgroundHtml() {
-  var cfg = getPrintGearConfig();
-
-  if (!cfg.enabled) {
-    return '';
-  }
-
-  return '<div class="print-gear-bg"><div class="print-gear-crop">' + getPrintGearSvgInline() + '</div></div>';
 }
 
 function buildPrintHtml(data) {
