@@ -1,4 +1,4 @@
-var STORAGE_KEY = 'gebatech_wartungsprotokoll_kaelte_v34';
+var STORAGE_KEY = 'gebatech_wartungsprotokoll_kaelte_v35';
 
 var CHECKLISTS = {
   aussen: [
