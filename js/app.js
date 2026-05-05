@@ -2084,7 +2084,7 @@ function buildPrintGearCss() {
 
   return [
     '.print-gear-bg{',
-      'position:fixed;',
+      'position:absolute;',
       'top:' + cfg.topMm + 'mm;',
       'right:' + cfg.rightMm + 'mm;',
       'width:' + cfg.boxWidthMm + 'mm;',
@@ -2109,8 +2109,8 @@ function buildPrintGearCss() {
       'display:block;',
     '}',
     '@media print{',
-      '.print-gear-bg{',
-        'position:fixed!important;',
+     '.print-gear-bg{',
+      'position:absolute!important;',
         '-webkit-print-color-adjust:exact!important;',
         'print-color-adjust:exact!important;',
       '}',
@@ -2130,8 +2130,10 @@ function getPrintGearBackgroundHtml() {
 
 function buildPrintHtml(data) {
   var css = [
-    'body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:24px;position:relative}',
-    '.print-content{position:relative;z-index:1}',
+    'html,body{margin:0;padding:0;background:#ffffff}',
+    'body{font-family:Arial,sans-serif;font-size:12px;color:#111;background:#ffffff}',
+    '.print-page{position:relative;width:210mm;min-height:297mm;margin:0 auto;padding:10mm;box-sizing:border-box;background:#ffffff;overflow:visible}',
+    '.print-content{position:relative;z-index:1;width:100%;box-sizing:border-box}',
     buildPrintGearCss(),
     '.logo{text-align:center;margin-bottom:8px}',
     '.logo svg{width:190px;height:auto;display:inline-block}',
@@ -2162,8 +2164,9 @@ var html =
   '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
   '<title>Prüf-/Wartungsprotokoll Kältetechnik</title>' +
   '<style>' + css + '</style></head><body>' +
-  getPrintGearBackgroundHtml() +
-  '<div class="print-content">';
+'<div class="print-page">' +
+getPrintGearBackgroundHtml() +
+'<div class="print-content">';
 
 html +=
   '<div class="logo">' + getPrintLogoSvgDirect() + '</div>' +
@@ -2242,7 +2245,7 @@ html +=
     (unterschrift.pngDataUrl ? '<img src="' + unterschrift.pngDataUrl + '">' : '') +
     '</div></div>';
 
-  html += '<div class="foot">' + escapeHtml(data.fusszeile || '').replace(/\n/g, '<br>') + '</div></div></body></html>';
+  html += '<div class="foot">' + escapeHtml(data.fusszeile || '').replace(/\n/g, '<br>') + '</div></div></div></body></html>';
 
   return html;
 }
@@ -2286,13 +2289,14 @@ async function generatePrintPdfBytes(data) {
   var iframe = document.createElement('iframe');
 
   iframe.style.position = 'fixed';
-  iframe.style.left = '-10000px';
+  iframe.style.left = '0';
   iframe.style.top = '0';
   iframe.style.width = '210mm';
   iframe.style.height = '297mm';
   iframe.style.border = '0';
-  iframe.style.opacity = '0';
-  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.background = '#ffffff';
+  iframe.style.zIndex = '-1';
+  iframe.style.pointerEvents = 'none';
 
   document.body.appendChild(iframe);
 
@@ -2306,21 +2310,32 @@ async function generatePrintPdfBytes(data) {
     await waitForPrintDocumentReady(iframe);
     await waitForImagesInDocument(doc);
 
-    var source = doc.body;
+    var source = doc.querySelector('.print-page');
+
+    if (!source) {
+      throw new Error('PDF-Export fehlgeschlagen: Druckseite .print-page wurde nicht gefunden.');
+    }
+
+    source.style.width = '210mm';
+    source.style.minHeight = '297mm';
+    source.style.margin = '0';
+    source.style.background = '#ffffff';
 
     var options = {
       margin: 0,
       filename: 'protokoll.pdf',
       image: {
         type: 'jpeg',
-        quality: 0.98
+        quality: 0.92
       },
       html2canvas: {
-        scale: 2,
+        scale: 1.25,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        windowWidth: doc.documentElement.scrollWidth || 794
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: Math.ceil(source.scrollWidth || 794)
       },
       jsPDF: {
         unit: 'mm',
