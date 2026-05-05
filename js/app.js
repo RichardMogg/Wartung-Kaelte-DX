@@ -1690,7 +1690,7 @@ async function exportZip() {
 await loadSharedLogoSvg();
 await loadPrintGearSvg();
 
-setStatus('ZIP wird erstellt ...', 'ok');
+setStatus('ZIP mit Druckansicht-PDFs wird erstellt ...', 'ok');
 
 try {
     var files = [];
