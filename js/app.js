@@ -2282,17 +2282,19 @@ function printChecklist(title, rows) {
 }
 
 async function generatePrintPdfBytes(data) {
-  if (typeof html2pdf !== 'function') {
-    throw new Error('PDF-Bibliothek fehlt: vendor/html2pdf.bundle.min.js wurde nicht geladen.');
+  if (typeof html2canvas !== 'function') {
+    throw new Error('PDF-Bibliothek unvollständig: html2canvas wurde nicht geladen.');
   }
+
+  var JsPDF = getJsPdfConstructor();
 
   var iframe = document.createElement('iframe');
 
   iframe.style.position = 'fixed';
   iframe.style.left = '0';
   iframe.style.top = '0';
-  iframe.style.width = '210mm';
-  iframe.style.height = '297mm';
+  iframe.style.width = '794px';
+  iframe.style.height = '1123px';
   iframe.style.border = '0';
   iframe.style.background = '#ffffff';
   iframe.style.zIndex = '-1';
@@ -2303,12 +2305,19 @@ async function generatePrintPdfBytes(data) {
   try {
     var doc = iframe.contentDocument || iframe.contentWindow.document;
 
+    var html = buildPrintHtml(data);
+    html = html.replace('</head>', buildPdfExportCssOverrides() + '</head>');
+
     doc.open();
-    doc.write(buildPrintHtml(data));
+    doc.write(html);
     doc.close();
 
     await waitForPrintDocumentReady(iframe);
     await waitForImagesInDocument(doc);
+
+    if (iframe.contentWindow && iframe.contentWindow.scrollTo) {
+      iframe.contentWindow.scrollTo(0, 0);
+    }
 
     var source = doc.querySelector('.print-page');
 
@@ -2316,46 +2325,121 @@ async function generatePrintPdfBytes(data) {
       throw new Error('PDF-Export fehlgeschlagen: Druckseite .print-page wurde nicht gefunden.');
     }
 
-    source.style.width = '210mm';
-    source.style.minHeight = '297mm';
+    source.style.width = '794px';
     source.style.margin = '0';
     source.style.background = '#ffffff';
+    source.style.overflow = 'visible';
 
-    var options = {
-      margin: 0,
-      filename: 'protokoll.pdf',
-      image: {
-        type: 'jpeg',
-        quality: 0.92
-      },
-      html2canvas: {
-        scale: 1.25,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: Math.ceil(source.scrollWidth || 794)
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      },
-      pagebreak: {
-        mode: ['css', 'legacy']
+    var contentWidthPx = 794;
+    var contentHeightPx = Math.max(
+      1123,
+      Math.ceil(source.scrollHeight),
+      Math.ceil(source.offsetHeight),
+      Math.ceil(doc.body.scrollHeight),
+      Math.ceil(doc.documentElement.scrollHeight)
+    );
+
+    var canvas = await html2canvas(source, {
+      backgroundColor: '#ffffff',
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      imageTimeout: 0,
+      x: 0,
+      y: 0,
+      scrollX: 0,
+      scrollY: 0,
+      width: contentWidthPx,
+      height: contentHeightPx,
+      windowWidth: contentWidthPx,
+      windowHeight: contentHeightPx
+    });
+
+    var pdf = new JsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+
+    var pdfWidthMm = 210;
+    var pdfHeightMm = 297;
+    var pageHeightPx = Math.floor(canvas.width * pdfHeightMm / pdfWidthMm);
+
+    var pageCanvas = document.createElement('canvas');
+    var pageCtx = pageCanvas.getContext('2d');
+
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = pageHeightPx;
+
+    var pageCount = Math.ceil(canvas.height / pageHeightPx);
+
+    for (var page = 0; page < pageCount; page++) {
+      if (page > 0) {
+        pdf.addPage('a4', 'portrait');
       }
-    };
 
-    var arrayBuffer = await html2pdf()
-      .set(options)
-      .from(source)
-      .outputPdf('arraybuffer');
+      pageCtx.fillStyle = '#ffffff';
+      pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
 
-    return new Uint8Array(arrayBuffer);
+      pageCtx.drawImage(
+        canvas,
+        0,
+        page * pageHeightPx,
+        canvas.width,
+        pageHeightPx,
+        0,
+        0,
+        pageCanvas.width,
+        pageCanvas.height
+      );
+
+      var imageData = pageCanvas.toDataURL('image/jpeg', 0.92);
+
+      pdf.addImage(
+        imageData,
+        'JPEG',
+        0,
+        0,
+        pdfWidthMm,
+        pdfHeightMm,
+        undefined,
+        'FAST'
+      );
+    }
+
+    return new Uint8Array(pdf.output('arraybuffer'));
   } finally {
     document.body.removeChild(iframe);
   }
+}
+
+function getJsPdfConstructor() {
+  if (window.jspdf && window.jspdf.jsPDF) {
+    return window.jspdf.jsPDF;
+  }
+
+  if (window.jsPDF) {
+    return window.jsPDF;
+  }
+
+  throw new Error('PDF-Bibliothek unvollständig: jsPDF wurde nicht geladen.');
+}
+
+function buildPdfExportCssOverrides() {
+  return [
+    '<style id="pdf-export-overrides">',
+    'html,body{width:794px!important;margin:0!important;padding:0!important;overflow:visible!important;background:#ffffff!important;}',
+    'body{font-family:Arial,sans-serif!important;font-size:12px!important;color:#111!important;}',
+    '.print-page{width:794px!important;min-height:1123px!important;margin:0!important;padding:38px!important;box-sizing:border-box!important;background:#ffffff!important;overflow:visible!important;}',
+    '.print-content{width:100%!important;box-sizing:border-box!important;}',
+    '.print-gear-bg{position:absolute!important;}',
+    'table{page-break-inside:auto!important;}',
+    'tr{page-break-inside:avoid!important;}',
+    '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}',
+    '</style>'
+  ].join('');
 }
 
 function waitForPrintDocumentReady(iframe) {
