@@ -2341,7 +2341,7 @@ async function generatePrintPdfBytes(data) {
 
     var canvas = await html2canvas(source, {
       backgroundColor: '#ffffff',
-      scale: 1.5,
+      scale: 2.5,
       useCORS: true,
       allowTaint: true,
       logging: false,
@@ -2395,18 +2395,16 @@ async function generatePrintPdfBytes(data) {
         pageCanvas.height
       );
 
-      var imageData = pageCanvas.toDataURL('image/jpeg', 0.92);
+      var imageData = pageCanvas.toDataURL('image/jpeg', 0.98);
 
       pdf.addImage(
-        imageData,
-        'JPEG',
-        0,
-        0,
-        pdfWidthMm,
-        pdfHeightMm,
-        undefined,
-        'FAST'
-      );
+      imageData,
+      'JPEG',
+      0,
+      0,
+      pdfWidthMm,
+      pdfHeightMm
+    );
     }
 
     return new Uint8Array(pdf.output('arraybuffer'));
