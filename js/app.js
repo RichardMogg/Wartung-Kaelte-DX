@@ -1661,10 +1661,13 @@ function addAttachmentBundleToZip(files, folder, bundle) {
   addAttachmentFilesToZip(files, folder + 'fotos-dateien/ausseneinheit/', bundle.ausseneinheit);
 
   for (var i = 0; i < bundle.inneneinheiten.length; i++) {
+    var unit = bundle.inneneinheiten[i] || {};
+    var unitName = sanitizePathPart(unit.bezeichnung, 'ohne_bezeichnung');
+
     addAttachmentFilesToZip(
       files,
-      folder + 'fotos-dateien/inneneinheiten/inneneinheit_' + pad3(i + 1) + '/',
-      bundle.inneneinheiten[i].files || []
+      folder + 'fotos-dateien/inneneinheiten/inneneinheit_' + pad3(i + 1) + '_' + unitName + '/',
+      unit.files || []
     );
   }
 }
@@ -1999,6 +2002,39 @@ function updateImportedProtocolCompleteness() {
   }
 }
 
+function buildZipFileName() {
+  var firstRecord = appState.protocols[0] || {};
+  var data = firstRecord.data || {};
+  var stammdaten = data.stammdaten || {};
+
+  var kunde = sanitizePathPart(stammdaten.kunde, 'kein_kunde');
+  var objekt = sanitizePathPart(stammdaten.objekt, 'kein_objekt');
+
+  return kunde + '_' + objekt + '_wartungsprotokolle_kaelte_' + formatDateCompact(new Date()) + '.zip';
+}
+
+function buildProtocolFolderName(record, index) {
+  var data = record && record.data ? record.data : {};
+  var kopfdaten = data.kopfdaten || {};
+  var bezeichnung = sanitizePathPart(kopfdaten.bezeichnungName, 'ohne_bezeichnung');
+
+  return 'protokoll_' + pad3(index + 1) + '_' + bezeichnung;
+}
+
+function formatDateCompact(date) {
+  return String(date.getFullYear()) +
+    pad2(date.getMonth() + 1) +
+    pad2(date.getDate());
+}
+
+function sanitizePathPart(value, fallback) {
+  var text = sanitizeFileName(value || '');
+
+  text = text.replace(/^_+|_+$/g, '');
+
+  return text || fallback;
+}
+
 async function exportZip() {
   if (editingIndex !== null) {
     setStatus('Es ist noch ein Protokoll im Bearbeitungsmodus. Erst Änderungen speichern oder Formular leeren.', 'error');
@@ -2058,19 +2094,19 @@ try {
     files.push({ name: 'protokolle.json', data: utf8(JSON.stringify(exportData, null, 2)) });
     files.push({ name: 'protokolle.csv', data: utf8(String.fromCharCode(65279) + buildCsvForProtocols(appState.protocols)) });
 
-    for (var i = 0; i < appState.protocols.length; i++) {
-      var record = appState.protocols[i];
-      var folder = 'protokoll_' + pad3(i + 1) + '/';
+for (var i = 0; i < appState.protocols.length; i++) {
+  var record = appState.protocols[i];
+  var folder = buildProtocolFolderName(record, i) + '/';
 
-files.push({ name: folder + 'druckansicht.html', data: utf8(buildPrintHtml(record.data)) });
-files.push({ name: folder + 'protokoll.pdf', data: await generatePrintPdfBytes(record.data) });
+  files.push({ name: folder + 'druckansicht.html', data: utf8(buildPrintHtml(record.data)) });
+  files.push({ name: folder + 'protokoll.pdf', data: await generatePrintPdfBytes(record.data) });
 
-var attachments = normalizeAttachmentBundle(photoStore[record.recordId] || []);
-addAttachmentBundleToZip(files, folder, attachments);
-    }
+  var attachments = normalizeAttachmentBundle(photoStore[record.recordId] || []);
+  addAttachmentBundleToZip(files, folder, attachments);
+}
 
     var zip = buildZip(files);
-    var filename = 'wartungsprotokolle_kaelte_' + formatDateFile(new Date()) + '.zip';
+    var filename = buildZipFileName();
 
     downloadFile(filename, zip, 'application/zip');
 
