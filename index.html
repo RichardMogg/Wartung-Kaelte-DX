@@ -85,25 +85,32 @@
         </div>
       </details>
 
-      <details class="section" id="sectionAussen">
-        <summary>
-          <span>3. Außeneinheit<span class="summary-sub" id="summaryAussen">Gerätedaten, Zustand, Kühlleistung/Heizleistung, Kältemittelfüllung</span></span>
+    <details class="section" id="sectionAussen">
+       <summary>
+      <span>3. Außeneinheit<span class="summary-sub" id="summaryAussen">Gerätedaten, Zustand, Kühlleistung/Heizleistung, Kältemittelfüllung</span></span>
         </summary>
-        <div class="section-body">
-          <div class="grid">
-            <div class="field">
-              <label for="aussenTypeInput">Type <span class="required-hint">*</span></label>
-              <input id="aussenTypeInput" required autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="aussenSeriennummerInput">Seriennummer <span class="required-hint">*</span></label>
-              <input id="aussenSeriennummerInput" required autocomplete="off">
-            </div>
-          </div>
+       <div class="section-body">
+       <div class="grid">
+        <div class="field">
+        <label for="aussenTypeInput">Type <span class="required-hint">*</span></label>
+        <input id="aussenTypeInput" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="aussenSeriennummerInput">Seriennummer <span class="required-hint">*</span></label>
+        <input id="aussenSeriennummerInput" required autocomplete="off">
+      </div>
+    </div>
 
-          <div id="checkAussen"></div>
-        </div>
-      </details>
+    <div id="checkAussen"></div>
+
+    <div class="field">
+      <label for="aussenFotoInput">Fotos Außeneinheit</label>
+      <input id="aussenFotoInput" type="file" accept="image/*" multiple>
+      <div class="small-text">Fotos zur Außeneinheit werden beim Übernehmen für den ZIP-Export zwischengespeichert.</div>
+    </div>
+    <div class="photo-list" id="aussenPhotoList">Keine Fotos ausgewählt.</div>
+  </div>
+</details>
 
       <details class="section" id="sectionInnen">
         <summary><span>4. Inneneinheiten<span class="summary-sub" id="summaryInnen">Dynamisch erweiterbar</span></span></summary>
@@ -172,15 +179,16 @@
       </details>
 
       <details class="section" id="sectionFotos">
-        <summary><span>9. Fotos<span class="summary-sub" id="summaryFotos">Allgemeiner Fotobereich</span></span></summary>
-        <div class="section-body">
-          <div class="field">
-            <label for="fotoInput">Fotos auswählen / aufnehmen</label>
-            <input id="fotoInput" type="file" accept="image/*" multiple>
-        <div class="small-text">Fotos werden beim Übernehmen in der Protokollliste für den ZIP-Export zwischengespeichert. Einzelne Fotos können vor dem Übernehmen wieder gelöscht werden. Wichtig: Nach Browser-Neuladen oder JSON-Import müssen Fotodateien erneut ausgewählt und das Protokoll erneut übernommen werden.</div>          </div>
-          <div class="photo-list" id="photoList">Keine Fotos ausgewählt.</div>
-        </div>
-      </details>
+  <summary><span>9. Fotos/Dateien<span class="summary-sub" id="summaryFotos">Allgemeiner Fotos-/Dateibereich</span></span></summary>
+  <div class="section-body">
+    <div class="field">
+      <label for="fotoInput">Fotos/Dateien auswählen</label>
+      <input id="fotoInput" type="file" multiple>
+      <div class="small-text">Hier können allgemeine Fotos und beliebige Dateien angefügt werden. Dateien werden beim Übernehmen in der Protokollliste für den ZIP-Export zwischengespeichert. Wichtig: Nach Browser-Neuladen oder JSON-Import müssen Dateien erneut ausgewählt und das Protokoll erneut übernommen werden.</div>
+    </div>
+    <div class="photo-list" id="photoList">Keine Fotos/Dateien ausgewählt.</div>
+  </div>
+</details>
 
       <details class="section" id="sectionGesamt">
         <summary><span>10. Gesamtzustand / Mängel<span class="summary-sub" id="summaryGesamt">Pflichtauswahl</span></span></summary>
@@ -247,9 +255,9 @@
 
   <footer id="footerText">GEBATECH GmbH | Gebäude- und Anlagentechnik | AUSTRIA 4400 Steyr | Im Stadtgut Zone E 20 | T +43 7252 93074 | F -400 | office@gebatech.at<br>FN 471952y | UID: ATU 72271329 | IBAN: AT39 3411 4000 0015 1092 | BIC: RZOOAT2L114 | Gerichtsstand: Landesgericht Steyr | www.gebatech.at</footer>
 
-<script src="js/form-config.js?v=20260505-10" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="js/form-config.js?v=20260508-1" defer></script>
+<script src="lib/html2pdf.bundle.min.js?v=20260508-1" defer></script>
+<script src="js/app.js?v=20260508-1" defer></script>
 <script src="js/app.js?v=20260505-10" defer></script>
 </body>
 </html>

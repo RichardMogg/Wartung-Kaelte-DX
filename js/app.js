@@ -15,6 +15,8 @@ var appState = {
 
 var photoStore = {};
 var currentPhotos = [];
+var currentAussenPhotos = [];
+var currentIndoorPhotos = {};
 var logoSvgCache = '';
 var logoSvgLoading = null;
 var printGearSvgCache = '';
@@ -182,7 +184,13 @@ function bindEvents() {
     addIndoorUnit(true);
   });
 
-  document.getElementById('fotoInput').addEventListener('change', updatePhotoListFromInput);
+  document.getElementById('fotoInput').addEventListener('change', function () {
+  updateAttachmentListFromInput('allgemein', this);
+});
+
+document.getElementById('aussenFotoInput').addEventListener('change', function () {
+  updateAttachmentListFromInput('ausseneinheit', this);
+});
   document.getElementById('clearSignatureButton').addEventListener('click', clearSignature);
   document.getElementById('takeProtocolButton').addEventListener('click', takeProtocolIntoList);
   document.getElementById('bottomTakeButton').addEventListener('click', takeProtocolIntoList);
@@ -317,6 +325,12 @@ function updateCheckRowConditional(row) {
 function addIndoorUnit(scrollToNew, values) {
   indoorCounter++;
 
+  var indoorKey = String(indoorCounter);
+
+  if (!currentIndoorPhotos[indoorKey]) {
+    currentIndoorPhotos[indoorKey] = [];
+  }
+
   var card = document.createElement('details');
   card.className = 'indoor-card';
   card.open = true;
@@ -332,6 +346,12 @@ function addIndoorUnit(scrollToNew, values) {
       '<div class="field"><label>Bezeichnung / Standort der Inneneinheit</label><input data-indoor-name autocomplete="off"></div>' +
       '<div class="field"><label>Messwerte Inneneinheit</label>' + buildIndoorMeasurementHtml() + '</div>' +
       '<div data-indoor-checks></div>' +
+      '<div class="field">' +
+        '<label>Fotos Inneneinheit</label>' +
+        '<input type="file" accept="image/*" multiple data-indoor-photo-input>' +
+        '<div class="small-text">Fotos zu dieser Inneneinheit werden beim Übernehmen für den ZIP-Export zwischengespeichert.</div>' +
+      '</div>' +
+      '<div class="photo-list" data-indoor-photo-list>Keine Fotos ausgewählt.</div>' +
       '<button type="button" class="btn-danger" data-remove-indoor>Diese Inneneinheit entfernen</button>' +
     '</div>';
 
@@ -340,14 +360,20 @@ function addIndoorUnit(scrollToNew, values) {
   renderChecklist(card.querySelector('[data-indoor-checks]'), 'innen_' + indoorCounter, CHECKLISTS.innen);
 
   card.querySelector('[data-remove-indoor]').addEventListener('click', function () {
+    delete currentIndoorPhotos[indoorKey];
     card.remove();
     updateIndoorSummaries();
+    updateSummaries();
     throttledDraftSave();
   });
 
   card.querySelector('[data-indoor-name]').addEventListener('input', updateIndoorSummaries);
   card.querySelector('[data-indoor-type]').addEventListener('input', throttledDraftSave);
   card.querySelector('[data-indoor-serial]').addEventListener('input', throttledDraftSave);
+
+  card.querySelector('[data-indoor-photo-input]').addEventListener('change', function () {
+    updateAttachmentListFromInput('innen', this, card);
+  });
 
   card.addEventListener('toggle', function () {
     if (card.open) {
@@ -359,6 +385,7 @@ function addIndoorUnit(scrollToNew, values) {
     setIndoorValues(card, values);
   }
 
+  updateAttachmentList('innen', card);
   closeOtherIndoorCards(card);
   updateIndoorSummaries();
 
@@ -500,15 +527,9 @@ async function takeProtocolIntoList() {
     }
 
     var recordId = existing ? existing.recordId : createId('WP');
-    var photos = await getCurrentPhotoFilesForRecord(recordId);
+var attachments = await getCurrentPhotoFilesForRecord(recordId);
 
-    data.fotos = photos.map(function (p) {
-      return {
-        name: p.name,
-        type: p.type,
-        size: p.data.length
-      };
-    });
+data.fotos = getPhotoMetaForCurrent();
 
     var record = {
       recordId: recordId,
@@ -521,7 +542,7 @@ async function takeProtocolIntoList() {
 
     if (wasEditing) {
       appState.protocols[targetIndex] = record;
-      photoStore[recordId] = photos;
+      photoStore[recordId] = attachments;
 
       editingIndex = null;
       appState.draft = null;
@@ -542,7 +563,7 @@ async function takeProtocolIntoList() {
     }
 
     appState.protocols.push(record);
-    photoStore[recordId] = photos;
+    photoStore[recordId] = attachments;
 
     editingIndex = null;
     appState.draft = null;
@@ -577,10 +598,8 @@ function loadProtocolForEdit(index) {
   var record = appState.protocols[index];
 
   editingIndex = index;
-  fillFormFromProtocol(record.data);
-  currentPhotos = (photoStore[record.recordId] || []).slice();
-  document.getElementById('fotoInput').value = '';
-  updatePhotoListFromCurrentPhotos();
+fillFormFromProtocol(record.data);
+restoreCurrentAttachmentsForEdit(record.recordId);
 
   appState.draft = {
     editingIndex: editingIndex,
@@ -636,7 +655,8 @@ function renderProtocolList() {
     var kopf = data.kopfdaten || {};
     var stammdaten = data.stammdaten || {};
     var isEditing = editingIndex === i;
-    var photos = photoStore[record.recordId] || [];
+    var attachments = normalizeAttachmentBundle(photoStore[record.recordId] || []);
+    var attachmentCount = getAttachmentCount(attachments);
     var name = kopf.bezeichnungName || kopf.anlagentyp || 'ohne Anlagentyp';
     var div = document.createElement('div');
 
@@ -647,7 +667,7 @@ function renderProtocolList() {
       'Kunde: ' + escapeHtml(stammdaten.kunde || '-') + '<br>' +
       'Objekt: ' + escapeHtml(stammdaten.objekt || '-') + '<br>' +
       'Datum: ' + escapeHtml(kopf.datum || '-') + '<br>' +
-      '<span class="badge">Fotodateien geladen: ' + photos.length + '</span>' +
+      '<span class="badge">Fotos/Dateien geladen: ' + attachmentCount + '</span>' +
       (record.vollstaendig === false ? ' <span class="badge badge-edit">unvollständig</span>' : '') +
       (isEditing ? ' <span class="badge badge-edit">in Bearbeitung</span>' : '') +
       '<div class="button-grid">' +
@@ -711,7 +731,7 @@ function updateSummaries() {
 
   document.getElementById('summaryKopfdaten').textContent = kopfText;
   document.getElementById('summaryBemerkungen').textContent = document.getElementById('bemerkungenText').value.trim() ? 'Bemerkung vorhanden' : 'keine Bemerkung';
-  document.getElementById('summaryFotos').textContent = getCurrentPhotoCount() + ' Foto(s) aktuell';
+  document.getElementById('summaryFotos').textContent = getCurrentAttachmentCount() + ' Foto(s)/Datei(en) aktuell';
   document.getElementById('summaryGesamt').textContent = getRadioValue('gesamtzustand') || 'nicht ausgewählt';
   document.getElementById('summaryUnterschrift').textContent = signatureDirty ? 'Unterschrift vorhanden' : 'keine Unterschrift';
 
@@ -723,7 +743,7 @@ function updateSummaries() {
 }
 
 function getCurrentPhotoCount() {
-  return currentPhotos.length;
+  return getCurrentAttachmentCount();
 }
 
 function collectFields(container) {
@@ -835,7 +855,8 @@ function collectIndoorUnits() {
       seriennummer: card.querySelector('[data-indoor-serial]') ? card.querySelector('[data-indoor-serial]').value || '' : '',
       bezeichnung: card.querySelector('[data-indoor-name]').value || '',
       messwerte: collectIndoorMeasurements(card),
-      pruefpunkte: collectChecklist(card, 'Inneneinheit ' + (index + 1))
+      pruefpunkte: collectChecklist(card, 'Inneneinheit ' + (index + 1)),
+      fotos: getPhotoMetaList(getIndoorPhotosForCard(card))
     });
   });
 
@@ -1015,9 +1036,9 @@ function getPhotoExportIssues() {
   for (var i = 0; i < appState.protocols.length; i++) {
     var record = appState.protocols[i] || {};
     var data = record.data || {};
-    var expectedPhotos = Array.isArray(data.fotos) ? data.fotos.length : 0;
+    var expectedPhotos = getAttachmentMetaCount(data.fotos);
     var availablePhotos = record.recordId && photoStore[record.recordId]
-      ? photoStore[record.recordId].length
+      ? getAttachmentCount(photoStore[record.recordId])
       : 0;
 
     if (expectedPhotos > availablePhotos) {
@@ -1028,9 +1049,9 @@ function getPhotoExportIssues() {
         (record.recordId || 'ohne ID') +
         ': ' +
         expectedPhotos +
-        ' Foto(s) im Protokoll vermerkt, aber nur ' +
+        ' Datei(en) im Protokoll vermerkt, aber nur ' +
         availablePhotos +
-        ' Fotodatei(en) geladen. Fotos erneut auswählen und Protokoll erneut übernehmen.'
+        ' Datei(en) geladen. Dateien erneut auswählen und Protokoll erneut übernehmen.'
       );
     }
   }
@@ -1279,9 +1300,7 @@ function resetCurrentForm(showMessage) {
   indoorCounter = 0;
   addIndoorUnit(false);
 
-  document.getElementById('fotoInput').value = '';
-  currentPhotos = [];
-  updatePhotoListFromCurrentPhotos();
+clearCurrentAttachments();
 
   clearSignature(false);
   signatureDirty = false;
@@ -1312,22 +1331,24 @@ function clearAll() {
 }
 
 async function updatePhotoListFromInput() {
-  var input = document.getElementById('fotoInput');
-  var files = input.files;
+  await updateAttachmentListFromInput('allgemein', document.getElementById('fotoInput'));
+}
 
-  if (!files.length) {
-    updatePhotoListFromCurrentPhotos();
+async function updateAttachmentListFromInput(scope, input, card) {
+  if (!input || !input.files || !input.files.length) {
+    updateAttachmentList(scope, card);
     updateSummaries();
     return;
   }
 
+  var target = getAttachmentTarget(scope, card);
   var addedCount = 0;
 
-  for (var i = 0; i < files.length; i++) {
-    currentPhotos.push({
-      name: files[i].name,
-      type: files[i].type || 'application/octet-stream',
-      data: new Uint8Array(await files[i].arrayBuffer())
+  for (var i = 0; i < input.files.length; i++) {
+    target.files.push({
+      name: input.files[i].name,
+      type: input.files[i].type || 'application/octet-stream',
+      data: new Uint8Array(await input.files[i].arrayBuffer())
     });
 
     addedCount++;
@@ -1335,64 +1356,356 @@ async function updatePhotoListFromInput() {
 
   input.value = '';
 
-  updatePhotoListFromCurrentPhotos();
+  updateAttachmentList(scope, card);
   updateSummaries();
   saveDraft(false);
 
   setStatus(
-    addedCount + ' Foto(s) hinzugefügt. Insgesamt geladen: ' + currentPhotos.length,
+    addedCount + ' Datei(en) hinzugefügt. Insgesamt in diesem Bereich: ' + target.files.length,
     'ok'
   );
 }
 
-function updatePhotoListFromCurrentPhotos() {
-  var box = document.getElementById('photoList');
-  box.innerHTML = '';
+function getAttachmentTarget(scope, card) {
+  if (scope === 'ausseneinheit') {
+    return {
+      files: currentAussenPhotos,
+      list: document.getElementById('aussenPhotoList'),
+      input: document.getElementById('aussenFotoInput'),
+      emptyText: 'Keine Fotos ausgewählt.'
+    };
+  }
 
-  if (!currentPhotos.length) {
-    box.textContent = 'Keine Fotos ausgewählt.';
-    updateSummaries();
+  if (scope === 'innen') {
+    return {
+      files: getIndoorPhotosForCard(card),
+      list: card ? card.querySelector('[data-indoor-photo-list]') : null,
+      input: card ? card.querySelector('[data-indoor-photo-input]') : null,
+      emptyText: 'Keine Fotos ausgewählt.'
+    };
+  }
+
+  return {
+    files: currentPhotos,
+    list: document.getElementById('photoList'),
+    input: document.getElementById('fotoInput'),
+    emptyText: 'Keine Fotos/Dateien ausgewählt.'
+  };
+}
+
+function getIndoorPhotosForCard(card) {
+  if (!card) {
+    return [];
+  }
+
+  var key = String(card.getAttribute('data-indoor-index') || '');
+
+  if (!currentIndoorPhotos[key]) {
+    currentIndoorPhotos[key] = [];
+  }
+
+  return currentIndoorPhotos[key];
+}
+
+function updateAttachmentList(scope, card) {
+  var target = getAttachmentTarget(scope, card);
+  var box = target.list;
+  var files = target.files;
+
+  if (!box) {
     return;
   }
 
-  for (var i = 0; i < currentPhotos.length; i++) {
+  box.innerHTML = '';
+
+  if (!files.length) {
+    box.textContent = target.emptyText;
+    return;
+  }
+
+  for (var i = 0; i < files.length; i++) {
     var row = document.createElement('div');
     row.className = 'photo-row';
 
     var info = document.createElement('div');
     info.innerHTML =
-      '<div class="photo-name">' + escapeHtml(String(i + 1) + '. ' + currentPhotos[i].name) + '</div>' +
-      '<div class="photo-meta">' + escapeHtml(formatBytes(currentPhotos[i].data.length)) + '</div>';
+      '<div class="photo-name">' + escapeHtml(String(i + 1) + '. ' + files[i].name) + '</div>' +
+      '<div class="photo-meta">' + escapeHtml(formatBytes(files[i].data.length)) + '</div>';
 
     var button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn-danger photo-delete';
     button.textContent = 'Löschen';
-    button.setAttribute('data-photo-index', i);
+    button.setAttribute('data-attachment-index', i);
 
     button.addEventListener('click', function () {
-      deleteCurrentPhoto(Number(this.getAttribute('data-photo-index')));
+      deleteAttachment(scope, Number(this.getAttribute('data-attachment-index')), card);
     });
 
     row.appendChild(info);
     row.appendChild(button);
     box.appendChild(row);
   }
+}
 
+function updatePhotoListFromCurrentPhotos() {
+  updateAttachmentList('allgemein');
+}
+
+function updateAussenPhotoList() {
+  updateAttachmentList('ausseneinheit');
+}
+
+function updateAllIndoorPhotoLists() {
+  document.querySelectorAll('.indoor-card').forEach(function (card) {
+    updateAttachmentList('innen', card);
+  });
+}
+
+function updateAllAttachmentLists() {
+  updatePhotoListFromCurrentPhotos();
+  updateAussenPhotoList();
+  updateAllIndoorPhotoLists();
   updateSummaries();
 }
 
-function deleteCurrentPhoto(index) {
-  if (index < 0 || index >= currentPhotos.length) {
+function deleteAttachment(scope, index, card) {
+  var target = getAttachmentTarget(scope, card);
+
+  if (index < 0 || index >= target.files.length) {
     return;
   }
 
-  var deleted = currentPhotos[index].name;
-  currentPhotos.splice(index, 1);
-  document.getElementById('fotoInput').value = '';
-  updatePhotoListFromCurrentPhotos();
+  var deleted = target.files[index].name;
+  target.files.splice(index, 1);
+
+  if (target.input) {
+    target.input.value = '';
+  }
+
+  updateAttachmentList(scope, card);
+  updateSummaries();
   saveDraft(false);
-  setStatus('Foto gelöscht: ' + deleted, 'ok');
+  setStatus('Datei gelöscht: ' + deleted, 'ok');
+}
+
+function deleteCurrentPhoto(index) {
+  deleteAttachment('allgemein', index);
+}
+
+function getPhotoMetaList(files) {
+  var meta = [];
+
+  files = files || [];
+
+  for (var i = 0; i < files.length; i++) {
+    meta.push({
+      name: files[i].name,
+      type: files[i].type,
+      size: files[i].data.length
+    });
+  }
+
+  return meta;
+}
+
+function collectIndoorAttachmentMeta() {
+  var result = [];
+
+  document.querySelectorAll('.indoor-card').forEach(function (card, index) {
+    result.push({
+      nr: index + 1,
+      bezeichnung: card.querySelector('[data-indoor-name]') ? card.querySelector('[data-indoor-name]').value || '' : '',
+      fotos: getPhotoMetaList(getIndoorPhotosForCard(card))
+    });
+  });
+
+  return result;
+}
+
+function getPhotoMetaForCurrent() {
+  return {
+    allgemein: getPhotoMetaList(currentPhotos),
+    ausseneinheit: getPhotoMetaList(currentAussenPhotos),
+    inneneinheiten: collectIndoorAttachmentMeta()
+  };
+}
+
+function collectIndoorAttachmentFiles() {
+  var result = [];
+
+  document.querySelectorAll('.indoor-card').forEach(function (card, index) {
+    result.push({
+      nr: index + 1,
+      bezeichnung: card.querySelector('[data-indoor-name]') ? card.querySelector('[data-indoor-name]').value || '' : '',
+      files: getIndoorPhotosForCard(card).slice()
+    });
+  });
+
+  return result;
+}
+
+function getCurrentAttachmentBundle() {
+  return {
+    allgemein: currentPhotos.slice(),
+    ausseneinheit: currentAussenPhotos.slice(),
+    inneneinheiten: collectIndoorAttachmentFiles()
+  };
+}
+
+async function getCurrentPhotoFilesForRecord(recordId) {
+  return getCurrentAttachmentBundle();
+}
+
+function normalizeAttachmentBundle(bundle) {
+  if (Array.isArray(bundle)) {
+    return {
+      allgemein: bundle.slice(),
+      ausseneinheit: [],
+      inneneinheiten: []
+    };
+  }
+
+  bundle = bundle || {};
+
+  return {
+    allgemein: Array.isArray(bundle.allgemein) ? bundle.allgemein : [],
+    ausseneinheit: Array.isArray(bundle.ausseneinheit) ? bundle.ausseneinheit : [],
+    inneneinheiten: Array.isArray(bundle.inneneinheiten) ? bundle.inneneinheiten : []
+  };
+}
+
+function getAttachmentCount(bundle) {
+  bundle = normalizeAttachmentBundle(bundle);
+
+  var count = bundle.allgemein.length + bundle.ausseneinheit.length;
+
+  for (var i = 0; i < bundle.inneneinheiten.length; i++) {
+    count += Array.isArray(bundle.inneneinheiten[i].files) ? bundle.inneneinheiten[i].files.length : 0;
+  }
+
+  return count;
+}
+
+function getAttachmentMetaCount(meta) {
+  if (Array.isArray(meta)) {
+    return meta.length;
+  }
+
+  meta = meta || {};
+
+  var count = 0;
+
+  count += Array.isArray(meta.allgemein) ? meta.allgemein.length : 0;
+  count += Array.isArray(meta.ausseneinheit) ? meta.ausseneinheit.length : 0;
+
+  var indoors = Array.isArray(meta.inneneinheiten) ? meta.inneneinheiten : [];
+
+  for (var i = 0; i < indoors.length; i++) {
+    count += Array.isArray(indoors[i].fotos) ? indoors[i].fotos.length : 0;
+  }
+
+  return count;
+}
+
+function getCurrentAttachmentCount() {
+  return getAttachmentCount(getCurrentAttachmentBundle());
+}
+
+function restoreCurrentAttachmentsForEdit(recordId) {
+  var bundle = normalizeAttachmentBundle(photoStore[recordId]);
+
+  currentPhotos = bundle.allgemein.slice();
+  currentAussenPhotos = bundle.ausseneinheit.slice();
+  currentIndoorPhotos = {};
+
+  var cards = document.querySelectorAll('.indoor-card');
+
+  cards.forEach(function (card, index) {
+    var key = String(card.getAttribute('data-indoor-index') || '');
+    var unit = bundle.inneneinheiten[index];
+
+    currentIndoorPhotos[key] = unit && Array.isArray(unit.files) ? unit.files.slice() : [];
+  });
+
+  updateAllAttachmentLists();
+}
+
+function clearCurrentAttachments() {
+  currentPhotos = [];
+  currentAussenPhotos = [];
+  currentIndoorPhotos = {};
+
+  var generalInput = document.getElementById('fotoInput');
+  var outsideInput = document.getElementById('aussenFotoInput');
+
+  if (generalInput) {
+    generalInput.value = '';
+  }
+
+  if (outsideInput) {
+    outsideInput.value = '';
+  }
+
+  document.querySelectorAll('[data-indoor-photo-input]').forEach(function (input) {
+    input.value = '';
+  });
+
+  updateAllAttachmentLists();
+}
+
+function addAttachmentBundleToZip(files, folder, bundle) {
+  bundle = normalizeAttachmentBundle(bundle);
+
+  addAttachmentFilesToZip(files, folder + 'fotos-dateien/allgemein/', bundle.allgemein);
+  addAttachmentFilesToZip(files, folder + 'fotos-dateien/ausseneinheit/', bundle.ausseneinheit);
+
+  for (var i = 0; i < bundle.inneneinheiten.length; i++) {
+    addAttachmentFilesToZip(
+      files,
+      folder + 'fotos-dateien/inneneinheiten/inneneinheit_' + pad3(i + 1) + '/',
+      bundle.inneneinheiten[i].files || []
+    );
+  }
+}
+
+function addAttachmentFilesToZip(files, folder, list) {
+  list = list || [];
+
+  for (var i = 0; i < list.length; i++) {
+    files.push({
+      name: folder + 'datei_' + pad3(i + 1) + '_' + sanitizeFileName(list[i].name),
+      data: list[i].data
+    });
+  }
+}
+
+function addCsvAttachmentMetaRows(rows, recordId, fotos) {
+  if (Array.isArray(fotos)) {
+    fotos.forEach(function (foto, index) {
+      rows.push([recordId, 'Fotos/Dateien', 'Allgemein', 'Datei ' + (index + 1), foto.name, '', '', String(foto.size || ''), foto.type || '']);
+    });
+
+    return;
+  }
+
+  fotos = fotos || {};
+
+  (fotos.allgemein || []).forEach(function (foto, index) {
+    rows.push([recordId, 'Fotos/Dateien', 'Allgemein', 'Datei ' + (index + 1), foto.name, '', '', String(foto.size || ''), foto.type || '']);
+  });
+
+  (fotos.ausseneinheit || []).forEach(function (foto, index) {
+    rows.push([recordId, 'Fotos/Dateien', 'Außeneinheit', 'Foto ' + (index + 1), foto.name, '', '', String(foto.size || ''), foto.type || '']);
+  });
+
+  (fotos.inneneinheiten || []).forEach(function (unit, unitIndex) {
+    var unitName = unit.bezeichnung || String(unitIndex + 1);
+
+    (unit.fotos || []).forEach(function (foto, index) {
+      rows.push([recordId, 'Fotos/Dateien', 'Inneneinheit ' + (unitIndex + 1) + ' – ' + unitName, 'Foto ' + (index + 1), foto.name, '', '', String(foto.size || ''), foto.type || '']);
+    });
+  });
 }
 
 function initSignatureCanvas() {
@@ -1752,14 +2065,8 @@ try {
 files.push({ name: folder + 'druckansicht.html', data: utf8(buildPrintHtml(record.data)) });
 files.push({ name: folder + 'protokoll.pdf', data: await generatePrintPdfBytes(record.data) });
 
-      var photos = photoStore[record.recordId] || [];
-
-      for (var p = 0; p < photos.length; p++) {
-        files.push({
-          name: folder + 'fotos/foto_' + pad3(p + 1) + '_' + sanitizeFileName(photos[p].name),
-          data: photos[p].data
-        });
-      }
+var attachments = normalizeAttachmentBundle(photoStore[record.recordId] || []);
+addAttachmentBundleToZip(files, folder, attachments);
     }
 
     var zip = buildZip(files);
@@ -1834,7 +2141,9 @@ function clearCompletelyAfterExport() {
   };
 
   photoStore = {};
-  currentPhotos = [];
+currentPhotos = [];
+currentAussenPhotos = [];
+currentIndoorPhotos = {};
   editingIndex = null;
   indoorCounter = 0;
 
@@ -1845,6 +2154,7 @@ function clearCompletelyAfterExport() {
   document.getElementById('protocolForm').reset();
   document.getElementById('innenContainer').innerHTML = '';
   document.getElementById('fotoInput').value = '';
+  document.getElementById('aussenFotoInput').value = '';
   document.getElementById('importJsonInput').value = '';
 
   currentPhotos = [];
@@ -1855,6 +2165,7 @@ function clearCompletelyAfterExport() {
 
   setDefaultDate();
   addIndoorUnit(false);
+  updateAllAttachmentLists();
   handleConditionalFields();
   renderProtocolList();
   updateEditModeUI();
@@ -1956,11 +2267,7 @@ rows.push([record.recordId, 'Inneneinheit', unitName, 'Seriennummer', unit.serie
     rows.push([record.recordId, 'Gesamtzustand', '', 'Gesamtzustand', data.gesamtzustand, '', '', data.gesamtMangelbeschreibung, '']);
     rows.push([record.recordId, 'Unterschrift', '', 'Techniker', data.unterschrift.techniker, '', '', data.unterschrift.vorhanden ? 'Unterschrift im Protokoll eingebettet' : 'keine Unterschrift', '']);
 
-    if (data.fotos && data.fotos.length) {
-      data.fotos.forEach(function (foto, index) {
-        rows.push([record.recordId, 'Fotos', '', 'Foto ' + (index + 1), foto.name, '', '', String(foto.size || ''), foto.type || '']);
-      });
-    }
+addCsvAttachmentMetaRows(rows, record.recordId, data.fotos);
   });
 
   return rows.map(function (row) {
