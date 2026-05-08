@@ -2868,6 +2868,10 @@ function buildZip(files) {
   var centralParts = [];
   var offset = 0;
 
+  // ZIP General Purpose Bit Flag:
+  // Bit 11 / 0x0800 = Dateinamen und Kommentare sind UTF-8 codiert.
+  var utf8FileNameFlag = 0x0800;
+
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
     var nameBytes = utf8(file.name);
@@ -2878,7 +2882,7 @@ function buildZip(files) {
     var localHeader = concatBytes(
       u32(0x04034b50),
       u16(20),
-      u16(0),
+      u16(utf8FileNameFlag),
       u16(0),
       u16(timeDate.time),
       u16(timeDate.date),
@@ -2896,7 +2900,7 @@ function buildZip(files) {
       u32(0x02014b50),
       u16(20),
       u16(20),
-      u16(0),
+      u16(utf8FileNameFlag),
       u16(0),
       u16(timeDate.time),
       u16(timeDate.date),
